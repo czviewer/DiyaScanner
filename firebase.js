@@ -1,4 +1,4 @@
-// firebase.js (for use via <script src>)
+// firebase.js
 const firebaseConfig = {
   apiKey: "AIzaSyAyhQ_u0aj_TDUQGC0J_Jcq5kzVmIlJrNQ",
   authDomain: "diya-motors-tracker.firebaseapp.com",
@@ -6,11 +6,10 @@ const firebaseConfig = {
   projectId: "diya-motors-tracker",
   storageBucket: "diya-motors-tracker.appspot.com",
   messagingSenderId: "863309961024",
-  appId: "1:863309961024:web:000cec3cdfe97aaaf60ca5",
-  measurementId: "G-PJK0E9410H"
+  appId: "1:863309961024:web:000cec3cdfe97aaaf60ca5"
 };
 
-// Load compat version
+// Initialize Firebase using compat
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
