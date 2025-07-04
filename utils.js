@@ -25,17 +25,17 @@ function getDistance(lat1, lon1, lat2, lon2) {
  * Fetch branch coordinates from Firebase (or fallback hardcoded)
  */
 async function getBranchCoordinates(branch, subdivision) {
-  try {
-    const snapshot = await db.ref(`branchLocations/${branch}/${subdivision}`).once('value');
-    const data = snapshot.val();
-    if (data && data.lat && data.lon) return { lat: data.lat, lon: data.lon };
-  } catch (e) {
-    console.warn("⚠️ Branch coordinates fetch failed, using fallback", e);
-  }
+  const ref = firebase.database().ref(`branchLocations/${branch}/${subdivision}`);
+  const snapshot = await ref.once('value');
+  if (!snapshot.exists()) throw new Error("Branch location not found");
 
-  // 🔁 Fallback coordinates if Firebase fails
-  return { lat: 13.0827, lon: 80.2707 }; // Chennai default fallback
+  const data = snapshot.val();
+  return {
+    lat: data.latitude,   // ✅ use your keys
+    lon: data.longitude   // ✅ use your keys
+  };
 }
+
 
 /**
  * Log GPS failures separately for admin review
@@ -58,7 +58,7 @@ async function logFailure(empId, payload, distance, ip, device, reason) {
 async function isWithinBranchLocation(branch, subdivision, lat, lon) {
   const branchCoords = await getBranchCoordinates(branch, subdivision);
   const distance = getDistance(lat, lon, branchCoords.lat, branchCoords.lon);
-  return { valid: distance <= 100, distance };
+  return { valid: distance <= 1000, distance };
 }
 
 /**
