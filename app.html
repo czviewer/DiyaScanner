@@ -2,13 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Diya Attendance | QR + GPS</title>
+
   <script src="firebase.js"></script>
   <script src="utils.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+
   <style>
-    body { font-family: Arial, sans-serif; background: #f3f3f3; padding: 20px; }
+    body { font-family: Arial, sans-serif; background: #f3f3f3; padding: 20px; text-align: center; }
     #scanner { width: 100%; max-width: 400px; margin: 20px auto; border: 2px solid #333; }
     video { width: 100%; }
     .status { margin-top: 20px; font-weight: bold; color: green; }
@@ -16,40 +18,82 @@
 </head>
 <body>
   <h2>QR Attendance (Scan + GPS)</h2>
-  <div id="scanner">
-    <video id="video" autoplay></video>
-  </div>
+  <div id="scanner"><video id="video" autoplay></video></div>
   <div class="status" id="statusText">Waiting for scan...</div>
+
   <script>
     const video = document.getElementById('video');
     const statusText = document.getElementById('statusText');
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
+    let scanned = false; // avoid reprocessing
 
+    // Access camera
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
       .then(stream => { video.srcObject = stream; })
       .catch(err => { statusText.textContent = 'Camera error: ' + err.message; });
 
-    setInterval(() => {
+    // GPS Getter Promise
+    function getCurrentPositionPromise() {
+      return new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        });
+      });
+    }
+
+    // Main QR loop
+    setInterval(async () => {
+      if (scanned) return;
       if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        canvas.height = video.videoHeight;
         canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
         const code = jsQR(imageData.data, canvas.width, canvas.height);
+
         if (code) {
-          statusText.textContent = 'QR Scanned. Validating...';
+          scanned = true;
+          statusText.textContent = "QR Scanned. Acquiring location...";
+
           try {
             const decoded = JSON.parse(atob(code.data.split('.')[1]));
             const qrPayload = {
               branch: decoded.branch,
               subdivision: decoded.subdivision,
-              type: decoded.type,
+              type: decoded.type
             };
+
             const employeeId = localStorage.getItem("empId");
-            handleQRScanAndValidate(qrPayload, employeeId, statusText);
+            if (!employeeId) {
+              statusText.textContent = "Error: Not logged in.";
+              return;
+            }
+
+            // Get GPS
+            const position = await getCurrentPositionPromise();
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+
+            // Combine all
+            const dataToSend = {
+              ...qrPayload,
+              employeeId,
+              lat,
+              lon,
+              timestamp: new Date().toISOString()
+            };
+
+            // Send to validation function (Firebase Function or custom)
+            await handleQRScanAndValidate(dataToSend, statusText);
+            statusText.textContent = "✅ Attendance Marked Successfully!";
+
           } catch (err) {
-            statusText.textContent = 'Invalid QR Code.';
+            console.error(err);
+            statusText.textContent = "❌ Error: " + (err.message || "QR or GPS failed.");
+            scanned = false; // allow retry
           }
         }
       }
