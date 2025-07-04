@@ -1,57 +1,75 @@
-import { db } from './firebase.js';
+// ✅ utils.js - Used by QR+GPS attendance app
 
-export async function handleQRScanAndValidate(payload, empId, statusEl) {
-  if (!navigator.geolocation) {
-    return statusEl.textContent = 'GPS not supported';
-  }
+// Firebase should already be initialized via firebase.js
+const db = firebase.database();
 
-  statusEl.textContent = 'Getting GPS...';
-  navigator.geolocation.getCurrentPosition(async pos => {
-    const { latitude, longitude } = pos.coords;
-    const dist = getDistanceFromBranch(latitude, longitude);
-    const deviceInfo = navigator.userAgent;
-    const ip = await fetch("https://api.ipify.org?format=json").then(r => r.json()).then(d => d.ip).catch(() => 'N/A');
+/**
+ * Calculate the distance between two coordinates in meters.
+ * Haversine formula.
+ */
+function getDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371e3; // Earth radius in meters
+  const toRad = deg => deg * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
 
-    if (dist > 100) {
-      await logFailure(empId, payload, dist, ip, deviceInfo, 'Too far from branch');
-      return statusEl.textContent = '❌ Too far from branch location';
-    }
+  const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+            Math.sin(dLon / 2) ** 2;
 
-    const now = new Date().toISOString();
-    await db.ref(`attendance/${empId}/${now}`).set({
-      ...payload,
-      latitude,
-      longitude,
-      ip,
-      deviceInfo,
-      status: 'Success',
-      timestamp: now
-    });
-    statusEl.textContent = '✅ Attendance marked';
-  }, async err => {
-    await logFailure(empId, payload, null, 'N/A', navigator.userAgent, err.message);
-    statusEl.textContent = '❌ GPS failed: ' + err.message;
-  });
-}
-
-function getDistanceFromBranch(lat, lon) {
-  const brLat = 12.9716, brLon = 77.5946;
-  const R = 6371e3, φ1 = lat * Math.PI/180, φ2 = brLat * Math.PI/180;
-  const Δφ = (brLat-lat) * Math.PI/180;
-  const Δλ = (brLon-lon) * Math.PI/180;
-  const a = Math.sin(Δφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c; // in meters
 }
 
-async function logFailure(empId, payload, dist, ip, device, reason) {
-  const now = new Date().toISOString();
-  await db.ref(`gpsFailures/${empId}/${now}`).set({
+/**
+ * Fetch branch coordinates from Firebase (or fallback hardcoded)
+ */
+async function getBranchCoordinates(branch, subdivision) {
+  try {
+    const snapshot = await db.ref(`branchLocations/${branch}/${subdivision}`).once('value');
+    const data = snapshot.val();
+    if (data && data.lat && data.lon) return { lat: data.lat, lon: data.lon };
+  } catch (e) {
+    console.warn("⚠️ Branch coordinates fetch failed, using fallback", e);
+  }
+
+  // 🔁 Fallback coordinates if Firebase fails
+  return { lat: 13.0827, lon: 80.2707 }; // Chennai default fallback
+}
+
+/**
+ * Log GPS failures separately for admin review
+ */
+async function logFailure(empId, payload, distance, ip, device, reason) {
+  const failureRef = db.ref(`gpsFailures/${empId}`).push();
+  await failureRef.set({
     ...payload,
-    distance: dist,
+    distance,
     ip,
     device,
-    error: reason,
-    timestamp: now
+    reason,
+    timestamp: new Date().toISOString()
   });
+}
+
+/**
+ * Check if the user is within 100m radius of their branch
+ */
+async function isWithinBranchLocation(branch, subdivision, lat, lon) {
+  const branchCoords = await getBranchCoordinates(branch, subdivision);
+  const distance = getDistance(lat, lon, branchCoords.lat, branchCoords.lon);
+  return { valid: distance <= 100, distance };
+}
+
+/**
+ * Utility to get IP address (async)
+ */
+async function getPublicIP() {
+  try {
+    const res = await fetch("https://api.ipify.org?format=json");
+    const data = await res.json();
+    return data.ip;
+  } catch (err) {
+    return 'N/A';
+  }
 }
