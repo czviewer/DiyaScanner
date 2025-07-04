@@ -1,59 +1,492 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Minimal QR Scanner Test</title>
-<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-<style>
-  body { font-family: Arial, sans-serif; padding: 20px; text-align: center; }
-  #qr-reader { width: 300px; margin: auto; }
-  #result { margin-top: 20px; font-weight: bold; color: #333; }
-</style>
-</head>
-<body>
-  <h1>Minimal QR Scanner Test</h1>
-  <div id="qr-reader"></div>
-  <div id="result">Scan a QR code...</div>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AbsentEase QR Scanner</title>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <!-- IMPORTANT: Firebase Functions SDK for calling cloud functions -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-functions-compat.js"></script>
+    <!-- html5-qrcode for camera scanning -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <!-- jwt-decode for client-side token parsing (no verification here) -->
+    <script src="https://cdn.jsdelivr.net/npm/jwt-decode@3.1.2/build/jwt-decode.min.js"></script>
 
-  <script>
-    const qrCodeReader = new Html5Qrcode("qr-reader");
-    let isScanning = false;
-
-    async function startScanner() {
-      if (isScanning) return;
-      try {
-        const cameras = await Html5Qrcode.getCameras();
-        if (cameras && cameras.length) {
-          const cameraId = cameras[0].id;
-          await qrCodeReader.start(
-            cameraId,
-            { fps: 10, qrbox: 250 },
-            qrCodeSuccessCallback,
-            qrCodeErrorCallback
-          );
-          isScanning = true;
-        } else {
-          document.getElementById("result").textContent = "No cameras found.";
+    <style>
+        /* Global styles */
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            /* Using Inter for better aesthetics */
+            margin: 0;
+            padding: 20px;
+            background-color: #e0e7eb;
+            /* Light grey-blue background */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            color: #333;
+            box-sizing: border-box;
         }
-      } catch (e) {
-        document.getElementById("result").textContent = "Error starting scanner: " + e;
-      }
+
+        /* Main container for the app */
+        .container {
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 12px;
+            /* Rounded corners */
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            /* More prominent shadow */
+            width: 100%;
+            max-width: 550px;
+            /* Slightly wider for better camera view */
+            box-sizing: border-box;
+            text-align: center;
+            margin-bottom: 20px;
+            overflow: hidden;
+            /* Ensure rounded corners apply to children */
+        }
+
+        /* Title styling */
+        h1 {
+            color: #2c3e50;
+            /* Dark blue-grey */
+            margin-bottom: 25px;
+            font-size: 2.2em;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        /* QR reader container */
+        #qr-reader {
+            width: 100%;
+            min-height: 300px;
+            /* Ensure a minimum height for the scanner */
+            border: 3px solid #6a82fb;
+            /* Vibrant border color */
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 25px;
+            box-shadow: inset 0 0 10px rgba(106, 130, 251, 0.3);
+            /* Inner glow effect */
+        }
+
+        /* Style for the video stream inside the QR reader */
+        #qr-reader video {
+            width: 100% !important;
+            height: auto !important;
+            min-height: 300px;
+            /* Match container min-height */
+            object-fit: cover;
+            /* Ensure video covers the area */
+            border-radius: 8px;
+            /* Slightly smaller border-radius than parent */
+        }
+
+        /* Scan result display area */
+        #scan-result {
+            margin-top: 20px;
+            padding: 18px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1.15em;
+            word-break: break-word;
+            /* Allow long text to break */
+            text-align: center;
+            line-height: 1.4;
+            transition: all 0.3s ease-in-out;
+            /* Smooth transitions for messages */
+            min-height: 60px;
+            /* Ensure consistent height */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Message types */
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .info {
+            background-color: #e2e3e5;
+            color: #383d41;
+            border: 1px solid #d6d8db;
+        }
+
+        /* Loading message styling */
+        #loading-message {
+            font-size: 1.2em;
+            color: #555;
+            margin-top: 10px;
+            font-weight: 500;
+        }
+
+        /* Modal for authentication redirect */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            font-size: 1.8em;
+            margin-bottom: 15px;
+        }
+
+        .modal-content p {
+            margin-bottom: 25px;
+            color: #555;
+            font-size: 1.1em;
+        }
+
+        .modal-content button {
+            background-color: #6a82fb;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .modal-content button:hover {
+            background-color: #526cdb;
+            transform: translateY(-2px);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+                margin-bottom: 20px;
+            }
+
+            #qr-reader {
+                min-height: 250px;
+            }
+
+            #qr-reader video {
+                min-height: 250px;
+            }
+
+            #scan-result {
+                font-size: 1em;
+                padding: 15px;
+            }
+
+            .modal-content {
+                padding: 20px;
+            }
+
+            .modal-content h2 {
+                font-size: 1.5em;
+            }
+
+            .modal-content p {
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>AbsentEase QR Attendance</h1>
+        <div id="loading-message" class="info">Initializing camera...</div>
+        <div id="qr-reader"></div>
+        <div id="scan-result" class="info">Scan a QR code to record attendance.</div>
+    </div>
+
+    <!-- Authentication Modal -->
+    <div id="auth-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Authentication Required</h2>
+            <p>You need to be logged in to use the QR scanner. Please log in to your account.</p>
+            <button id="login-redirect-btn">Go to Login</button>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration (from your existing files like admin.html/home.html)
+        // This configuration is for the client-side Firebase SDKs.
+        const firebaseConfig = {
+            apiKey: "AIzaSyCwbK4jLFqPcb6mecLre-Vg5Wt6v1wldQM",
+            authDomain: "diya-motors-tracker.firebaseapp.com",
+            databaseURL: "https://diya-motors-tracker-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "diya-motors-tracker",
+            storageBucket: "diya-motors-tracker.appspot.com",
+            messagingSenderId: "863309961024",
+            appId: "1:863309961024:web:fec49e4d58807d9f758414"
+        };
+
+        // Initialize Firebase app
+        firebase.initializeApp(firebaseConfig);
+
+        // Get Firebase service instances
+        const auth = firebase.auth();
+        const functions = firebase.functions(); // For calling Cloud Functions
+
+        // Get references to DOM elements
+        const qrCodeReader = new Html5Qrcode("qr-reader");
+        const scanResultDiv = document.getElementById('scan-result');
+        const loadingMessage = document.getElementById('loading-message');
+        const authModal = document.getElementById('auth-modal');
+        const loginRedirectBtn = document.getElementById('login-redirect-btn');
+
+        // Flag to prevent multiple scans of the same QR code immediately
+        let isScanning = false;
+
+        // --- Utility Functions ---
+
+        /**
+         * Displays a message in the scan result area with a specific style.
+         * Optionally stops the scanner, waits, then restarts it.
+         * @param {string} message - The message to display.
+         * @param {'info'|'success'|'error'} type - The type of message (for styling).
+         * @param {boolean} [restartScanner=true] - Whether to stop and restart the scanner after a delay.
+         */
+        function displayMessage(message, type, restartScanner = true) {
+            scanResultDiv.className = `info ${type}`; // Reset classes, then add type
+            scanResultDiv.innerText = message;
+
+            if (restartScanner && (type === 'success' || type === 'error')) {
+                // Stop scanning temporarily after a result to prevent re-scans
+                if (isScanning) { // Only stop if it's currently scanning
+                    qrCodeReader.stop().then(() => {
+                        isScanning = false;
+                        setTimeout(() => {
+                            startQrScanner(); // Restart after a short delay
+                        }, 3000); // 3 seconds delay before restarting
+                    }).catch(err => {
+                        console.error("Failed to stop QR scanner:", err);
+                        // If stopping fails, still attempt to restart after delay
+                        setTimeout(() => {
+                            startQrScanner();
+                        }, 3000);
+                    });
+                } else {
+                    // If not scanning (e.g., initial message), no need to stop/restart logic
+                    setTimeout(() => {
+                        startQrScanner();
+                    }, 3000);
+                }
+            }
+        }
+
+        /**
+         * Starts the QR code scanner using the device camera.
+         * Attempts to use the back camera if available.
+         */
+        async function startQrScanner() {
+            if (isScanning) return; // Prevent multiple scanner instances
+
+            loadingMessage.style.display = 'block';
+            displayMessage('Initializing camera...', 'info', false); // Don't restart scanner for init message
+
+            const config = {
+                fps: 10, // Frames per second
+                qrbox: {
+                    width: 250,
+                    height: 250
+                }, // Size of the QR scanning box
+                supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+            };
+
+            try {
+                // Get all available cameras
+                const cameras = await Html5Qrcode.getCameras();
+                let cameraId = null;
+
+                if (cameras && cameras.length) {
+                    if (cameras.length > 1) {
+                        // Prioritize the back camera for better scanning experience
+                        const backCamera = cameras.find(camera => camera.label.toLowerCase().includes('back') || camera.label.toLowerCase().includes('rear'));
+                        if (backCamera) {
+                            cameraId = backCamera.id;
+                        } else {
+                            cameraId = cameras[0].id; // Fallback to the first available camera
+                        }
+                    } else {
+                        cameraId = cameras[0].id; // Only one camera available
+                    }
+                }
+
+                if (cameraId) {
+                    await qrCodeReader.start(
+                        cameraId, // Camera ID to use
+                        config, // Configuration for the scanner
+                        onScanSuccess, // Callback for successful scan
+                        onScanFailure // Callback for scan errors (e.g., no QR detected)
+                    );
+                    isScanning = true;
+                    loadingMessage.style.display = 'none'; // Hide loading message once camera is active
+                    displayMessage('Camera active. Point to a QR code.', 'info', false);
+                } else {
+                    displayMessage('❌ No camera found or accessible.', 'error', false);
+                    loadingMessage.style.display = 'none';
+                }
+            } catch (err) {
+                console.error("Error starting QR scanner:", err);
+                displayMessage(`❌ Error starting camera: ${err.message}. Please ensure camera permissions are granted.`, 'error', false);
+                loadingMessage.style.display = 'none';
+            }
+        }
+
+        /**
+         * Callback function executed when a QR code is successfully scanned.
+         * @param {string} decodedText - The raw text decoded from the QR code.
+         * @param {Object} decodedResult - Detailed result object from html5-qrcode.
+         */
+async function onScanSuccess(decodedText) {
+    const token = decodedText.trim();
+
+    // Basic JWT validation: must have exactly 3 parts separated by '.'
+    if (!token || token.split('.').length !== 3) {
+        displayMessage("❌ Invalid token format. Expected a JWT token.", 'error');
+        return;
     }
 
-    function qrCodeSuccessCallback(decodedText, decodedResult) {
-      document.getElementById("result").textContent = "Scanned text:\n" + decodedText;
-      // Optionally stop scanning after one successful scan:
-      qrCodeReader.stop();
-      isScanning = false;
+    let decodedPayload;
+    try {
+        decodedPayload = jwt_decode(token);
+        console.log("Decoded JWT payload:", decodedPayload);
+
+        // Optional expiry check (JWT exp usually in seconds since epoch)
+        if (decodedPayload.exp && Date.now() / 1000 > decodedPayload.exp) {
+            displayMessage('❌ QR Code Expired!', 'error');
+            return;
+        }
+    } catch (e) {
+        displayMessage("❌ Failed to decode JWT token.", 'error');
+        return;
     }
 
-    function qrCodeErrorCallback(errorMessage) {
-      // Uncomment to see scan errors in console:
-      // console.warn("QR scan error:", errorMessage);
-    }
+    // Call your Firebase Cloud Function
+    displayMessage('✅ Valid JWT token scanned. Sending to server...', 'info', false);
 
-    startScanner();
-  </script>
+    try {
+        const recordAttendance = functions.httpsCallable('recordAttendance');
+        const result = await recordAttendance({ token });
+
+        if (result.data.success) {
+            displayMessage(`✅ Attendance Recorded! Employee: ${decodedPayload.employeeId || 'Unknown'}, Session: ${decodedPayload.session || 'Unknown'}`, 'success');
+        } else {
+            displayMessage(`❌ Scan Failed: ${result.data.message || 'Unknown error'}`, 'error');
+        }
+    } catch (error) {
+        console.error(error);
+        displayMessage(`❌ Server error: ${error.message || error}`, 'error');
+    }
+}
+
+        /**
+         * Callback function executed when the QR code scanner fails to detect a QR code.
+         * This usually happens continuously if no QR code is in view.
+         * We don't display an error message for every failure, only for critical ones.
+         * @param {string} errorMessage - The error message from html5-qrcode.
+         */
+        function onScanFailure(errorMessage) {
+            // console.warn(`QR Scan Failure: ${errorMessage}`); // Log for debugging, but don't show to user constantly
+            // Only update UI for critical errors, not just "no QR found"
+            if (errorMessage.includes("No QR code found") || errorMessage.includes("No frames decoded")) {
+                // Do nothing, this is normal behavior when no QR is present
+            } else {
+                // For other errors, display to the user
+                // displayMessage(`Scanner Error: ${errorMessage}`, 'error', false);
+            }
+        }
+
+        // --- Authentication and Initialization ---
+
+        /**
+         * Shows the authentication modal and sets up the redirect button.
+         */
+        function showAuthModal() {
+            authModal.classList.add('active');
+            loginRedirectBtn.onclick = () => {
+                window.location.href = "login.html"; // Redirect to your login page
+            };
+        }
+
+        /**
+         * Main initialization function for the app.
+         * Checks authentication status and starts the scanner.
+         */
+        function initApp() {
+            // Listen for Firebase Auth state changes
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    // User is signed in.
+                    console.log("User is authenticated:", user.uid);
+                    startQrScanner(); // Start scanner only if authenticated
+                } else {
+                    // User is signed out.
+                    console.log("User is not authenticated. Redirecting to login.");
+                    showAuthModal(); // Show modal if not authenticated
+                }
+            });
+        }
+
+        // --- Event Listeners ---
+
+        // Start the app when the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
 </body>
+
 </html>
