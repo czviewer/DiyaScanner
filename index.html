@@ -18,10 +18,12 @@
     <style>
         /* Global styles */
         body {
-            font-family: 'Inter', Arial, sans-serif; /* Using Inter for better aesthetics */
+            font-family: 'Inter', Arial, sans-serif;
+            /* Using Inter for better aesthetics */
             margin: 0;
             padding: 20px;
-            background-color: #e0e7eb; /* Light grey-blue background */
+            background-color: #e0e7eb;
+            /* Light grey-blue background */
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -34,19 +36,24 @@
         .container {
             background-color: #ffffff;
             padding: 25px;
-            border-radius: 12px; /* Rounded corners */
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); /* More prominent shadow */
+            border-radius: 12px;
+            /* Rounded corners */
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            /* More prominent shadow */
             width: 100%;
-            max-width: 550px; /* Slightly wider for better camera view */
+            max-width: 550px;
+            /* Slightly wider for better camera view */
             box-sizing: border-box;
             text-align: center;
             margin-bottom: 20px;
-            overflow: hidden; /* Ensure rounded corners apply to children */
+            overflow: hidden;
+            /* Ensure rounded corners apply to children */
         }
 
         /* Title styling */
         h1 {
-            color: #2c3e50; /* Dark blue-grey */
+            color: #2c3e50;
+            /* Dark blue-grey */
             margin-bottom: 25px;
             font-size: 2.2em;
             font-weight: 700;
@@ -56,21 +63,27 @@
         /* QR reader container */
         #qr-reader {
             width: 100%;
-            min-height: 300px; /* Ensure a minimum height for the scanner */
-            border: 3px solid #6a82fb; /* Vibrant border color */
+            min-height: 300px;
+            /* Ensure a minimum height for the scanner */
+            border: 3px solid #6a82fb;
+            /* Vibrant border color */
             border-radius: 10px;
             overflow: hidden;
             margin-bottom: 25px;
-            box-shadow: inset 0 0 10px rgba(106, 130, 251, 0.3); /* Inner glow effect */
+            box-shadow: inset 0 0 10px rgba(106, 130, 251, 0.3);
+            /* Inner glow effect */
         }
 
         /* Style for the video stream inside the QR reader */
         #qr-reader video {
             width: 100% !important;
             height: auto !important;
-            min-height: 300px; /* Match container min-height */
-            object-fit: cover; /* Ensure video covers the area */
-            border-radius: 8px; /* Slightly smaller border-radius than parent */
+            min-height: 300px;
+            /* Match container min-height */
+            object-fit: cover;
+            /* Ensure video covers the area */
+            border-radius: 8px;
+            /* Slightly smaller border-radius than parent */
         }
 
         /* Scan result display area */
@@ -80,11 +93,14 @@
             border-radius: 10px;
             font-weight: 600;
             font-size: 1.15em;
-            word-break: break-word; /* Allow long text to break */
+            word-break: break-word;
+            /* Allow long text to break */
             text-align: center;
             line-height: 1.4;
-            transition: all 0.3s ease-in-out; /* Smooth transitions for messages */
-            min-height: 60px; /* Ensure consistent height */
+            transition: all 0.3s ease-in-out;
+            /* Smooth transitions for messages */
+            min-height: 60px;
+            /* Ensure consistent height */
             display: flex;
             align-items: center;
             justify-content: center;
@@ -386,12 +402,50 @@
 
             try {
                 // Extract token from the URL format: absentease://scan?token=<JWT_STRING>
-                const url = new URL(decodedText);
-                if (url.protocol !== 'absentease:' || url.hostname !== 'scan') {
-                    displayMessage('❌ Invalid QR code format. Expected "absentease://scan?token=..."', 'error');
+                let token;
+                let decodedPayload;
+                try {
+                    const expectedPrefix = "absentease://scan?token=";
+                    if (decodedText.startsWith(expectedPrefix)) {
+                        token = decodedText.substring(expectedPrefix.length);
+                    } else {
+                        displayMessage("❌ Invalid QR format. Expected 'absentease://scan?token=...'", 'error');
+                        return;
+                    }
+
+                    if (!token || token.length < 20) {
+                        displayMessage("❌ Missing or invalid token in QR code.", 'error');
+                        return;
+                    }
+
+                    // Decode JWT payload (client-side only, signature not verified here)
+                    decodedPayload = jwt_decode(token);
+                    console.log("Decoded JWT payload:", decodedPayload);
+
+                    // Expiry check
+                    const currentTime = new Date();
+                    const expiryTime = new Date(decodedPayload.expiry);
+                    if (currentTime > expiryTime) {
+                        displayMessage('❌ QR Code Expired!', 'error');
+                        return;
+                    }
+
+                    // Check AFTERNOON cutoff
+                    if (decodedPayload.session === "AFTERNOON") {
+                        const sevenPM = new Date();
+                        sevenPM.setHours(19, 0, 0, 0);
+                        if (currentTime > sevenPM) {
+                            displayMessage('❌ Afternoon QR Scan Window is closed (after 7:00 PM)', 'error');
+                            return;
+                        }
+                    }
+
+                } catch (err) {
+                    console.error("Error decoding QR:", err);
+                    displayMessage("❌ Failed to decode QR code. Invalid format or token.", 'error');
                     return;
                 }
-                token = url.searchParams.get('token');
+
                 if (!token) {
                     displayMessage('❌ QR code missing token parameter.', 'error');
                     return;
