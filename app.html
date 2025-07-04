@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Diya Attendance | QR + GPS</title>
 
+  <!-- Firebase + QR + Utility Scripts -->
   <script src="firebase.js"></script>
   <script src="utils.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
@@ -26,25 +27,14 @@
     const statusText = document.getElementById('statusText');
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
-    let scanned = false; // avoid reprocessing
+    let scanned = false;
 
-    // Access camera
+    // Open camera
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
       .then(stream => { video.srcObject = stream; })
       .catch(err => { statusText.textContent = 'Camera error: ' + err.message; });
 
-    // GPS Getter Promise
-    function getCurrentPositionPromise() {
-      return new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
-        });
-      });
-    }
-
-    // Main QR loop
+    // Main QR scanning loop
     setInterval(async () => {
       if (scanned) return;
       if (video.readyState === video.HAVE_ENOUGH_DATA) {
@@ -56,44 +46,57 @@
 
         if (code) {
           scanned = true;
-          statusText.textContent = "QR Scanned. Acquiring location...";
+          statusText.textContent = 'QR scanned. Validating location...';
 
           try {
             const decoded = JSON.parse(atob(code.data.split('.')[1]));
-            const qrPayload = {
-              branch: decoded.branch,
-              subdivision: decoded.subdivision,
-              type: decoded.type
-            };
-
             const employeeId = localStorage.getItem("empId");
-            if (!employeeId) {
-              statusText.textContent = "Error: Not logged in.";
-              return;
-            }
+            if (!employeeId) throw new Error("User not logged in");
 
-            // Get GPS
-            const position = await getCurrentPositionPromise();
+            const position = await new Promise((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject, {
+                enableHighAccuracy: true, timeout: 10000, maximumAge: 0
+              });
+            });
+
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
 
-            // Combine all
-            const dataToSend = {
-              ...qrPayload,
+            const ip = await getPublicIP();
+            const { valid, distance } = await isWithinBranchLocation(decoded.branch, decoded.subdivision, lat, lon);
+
+            if (!valid) {
+              await logFailure(employeeId, decoded, distance, ip, navigator.userAgent, "Out of range");
+              statusText.textContent = "❌ Out of branch location (" + Math.round(distance) + "m away)";
+              scanned = false;
+              return;
+            }
+
+            const payload = {
+              branch: decoded.branch,
+              subdivision: decoded.subdivision,
+              type: decoded.type,
               employeeId,
               lat,
               lon,
-              timestamp: new Date().toISOString()
+              timestamp: new Date().toISOString(),
+              ip,
+              device: navigator.userAgent
             };
 
-            // Send to validation function (Firebase Function or custom)
-            await handleQRScanAndValidate(dataToSend, statusText);
-            statusText.textContent = "✅ Attendance Marked Successfully!";
+            const result = await fetch('https://asia-southeast1-diya-motors-tracker.cloudfunctions.net/validateAttendance', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
 
+            const json = await result.json();
+            if (!result.ok) throw new Error(json.error || "Unknown validation error");
+            statusText.textContent = "✅ Success: " + json.message;
           } catch (err) {
             console.error(err);
-            statusText.textContent = "❌ Error: " + (err.message || "QR or GPS failed.");
-            scanned = false; // allow retry
+            statusText.textContent = "❌ Error: " + err.message;
+            scanned = false;
           }
         }
       }
