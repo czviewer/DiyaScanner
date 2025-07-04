@@ -1,6 +1,6 @@
 // firebase.js
 const firebaseConfig = {
-  apiKey: "AIzaSyAyhQ_u0aj_TDUQGC0J_Jcq5kzVmIlJrNQ",
+  apiKey: "AIzaSyCwbK4jLFqPcb6mecLre-Vg5Wt6v1wldQM",
   authDomain: "diya-motors-tracker.firebaseapp.com",
   databaseURL: "https://diya-motors-tracker-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "diya-motors-tracker",
