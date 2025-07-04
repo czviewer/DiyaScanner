@@ -392,122 +392,46 @@
          * @param {string} decodedText - The raw text decoded from the QR code.
          * @param {Object} decodedResult - Detailed result object from html5-qrcode.
          */
-        async function onScanSuccess(decodedText, decodedResult) {
-            console.log(`QR detected: ${decodedText}`);
+async function onScanSuccess(decodedText) {
+    const token = decodedText.trim();
 
-            // Basic client-side parsing and validation for quick feedback
-            // Full validation (including signature) is done on the server.
-            let token;
-            let decodedPayload;
+    // Basic validation: JWT tokens have 3 parts separated by dots
+    if (!token || token.split('.').length !== 3) {
+        displayMessage("❌ Invalid token format. Expected a JWT token.", 'error');
+        return;
+    }
 
-            try {
-                // Extract token from the URL format: absentease://scan?token=<JWT_STRING>
-                let token;
-                let decodedPayload;
-                try {
-                    const expectedPrefix = "absentease://scan?token=";
-                    if (decodedText.startsWith(expectedPrefix)) {
-                        token = decodedText.substring(expectedPrefix.length);
-                    } else {
-                        displayMessage("❌ Invalid QR format. Expected 'absentease://scan?token=...'", 'error');
-                        return;
-                    }
+    let decodedPayload;
+    try {
+        decodedPayload = jwt_decode(token);
+        console.log("Decoded JWT payload:", decodedPayload);
 
-                    if (!token || token.length < 20) {
-                        displayMessage("❌ Missing or invalid token in QR code.", 'error');
-                        return;
-                    }
-
-                    // Decode JWT payload (client-side only, signature not verified here)
-                    decodedPayload = jwt_decode(token);
-                    console.log("Decoded JWT payload:", decodedPayload);
-
-                    // Expiry check
-                    const currentTime = new Date();
-                    const expiryTime = new Date(decodedPayload.expiry);
-                    if (currentTime > expiryTime) {
-                        displayMessage('❌ QR Code Expired!', 'error');
-                        return;
-                    }
-
-                    // Check AFTERNOON cutoff
-                    if (decodedPayload.session === "AFTERNOON") {
-                        const sevenPM = new Date();
-                        sevenPM.setHours(19, 0, 0, 0);
-                        if (currentTime > sevenPM) {
-                            displayMessage('❌ Afternoon QR Scan Window is closed (after 7:00 PM)', 'error');
-                            return;
-                        }
-                    }
-
-                } catch (err) {
-                    console.error("Error decoding QR:", err);
-                    displayMessage("❌ Failed to decode QR code. Invalid format or token.", 'error');
-                    return;
-                }
-
-                if (!token) {
-                    displayMessage('❌ QR code missing token parameter.', 'error');
-                    return;
-                }
-
-                // Decode JWT payload (client-side, no verification)
-                decodedPayload = jwt_decode(token);
-                console.log("Decoded JWT payload (client-side):", decodedPayload);
-
-                // Client-side expiry check for immediate feedback
-                const currentTime = new Date();
-                const expiryTime = new Date(decodedPayload.expiry);
-                if (currentTime > expiryTime) {
-                    displayMessage('❌ QR Code Expired!', 'error');
-                    return;
-                }
-
-                // Client-side check for AFTERNOON session after 7:00 PM
-                if (decodedPayload.session === "AFTERNOON") {
-                    const sevenPM = new Date();
-                    sevenPM.setHours(19, 0, 0, 0); // Set to 7:00 PM today
-                    if (currentTime > sevenPM) {
-                        displayMessage('❌ Afternoon QR Scan Window is closed (after 7:00 PM)', 'error');
-                        return;
-                    }
-                }
-
-            } catch (e) {
-                console.error("Error parsing or decoding JWT client-side:", e);
-                displayMessage(`❌ Invalid QR Code or Token: ${e.message}`, 'error');
-                return;
-            }
-
-            // If client-side checks pass, send the token to the Firebase Cloud Function
-            displayMessage('✅ QR Validated Client-Side. Sending to server...', 'info', false);
-            try {
-                // Get the callable function from Firebase Functions
-                const recordAttendance = functions.httpsCallable('recordAttendance');
-
-                // Call the function with the JWT token
-                const result = await recordAttendance({
-                    token: token
-                });
-                console.log("Firebase Function response:", result.data);
-
-                if (result.data.success) {
-                    displayMessage(`✅ Attendance Recorded! Employee: ${decodedPayload.employeeId}, Session: ${decodedPayload.session}`, 'success');
-                } else {
-                    displayMessage(`❌ Scan Failed: ${result.data.message || 'An unknown error occurred.'}`, 'error');
-                }
-            } catch (error) {
-                console.error("Error calling Firebase Function:", error);
-                // Firebase Functions errors have a specific structure
-                let errorMessage = 'An unexpected error occurred during server communication.';
-                if (error.code) {
-                    errorMessage = `Server Error (${error.code}): ${error.message}`;
-                } else if (error.message) {
-                    errorMessage = `Server Error: ${error.message}`;
-                }
-                displayMessage(`❌ ${errorMessage}`, 'error');
-            }
+        // Expiry check (optional but recommended)
+        if (decodedPayload.exp && Date.now() / 1000 > decodedPayload.exp) {
+            displayMessage('❌ QR Code Expired!', 'error');
+            return;
         }
+    } catch (e) {
+        displayMessage("❌ Failed to decode JWT token.", 'error');
+        return;
+    }
+
+    // Now send to Firebase function
+    try {
+        displayMessage('✅ QR Validated Client-Side. Sending to server...', 'info', false);
+
+        const recordAttendance = functions.httpsCallable('recordAttendance');
+        const result = await recordAttendance({ token });
+
+        if (result.data.success) {
+            displayMessage(`✅ Attendance Recorded! Employee: ${decodedPayload.employeeId || "Unknown"}, Session: ${decodedPayload.session || "Unknown"}`, 'success');
+        } else {
+            displayMessage(`❌ Scan Failed: ${result.data.message || 'Unknown error'}`, 'error');
+        }
+    } catch (err) {
+        displayMessage(`❌ Server Error: ${err.message || err}`, 'error');
+    }
+}
 
         /**
          * Callback function executed when the QR code scanner fails to detect a QR code.
