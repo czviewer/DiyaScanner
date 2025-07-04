@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diya Attendance | QR + GPS</title>
+  <script src="firebase.js"></script>
+  <script src="utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f3f3f3; padding: 20px; }
+    #scanner { width: 100%; max-width: 400px; margin: 20px auto; border: 2px solid #333; }
+    video { width: 100%; }
+    .status { margin-top: 20px; font-weight: bold; color: green; }
+  </style>
+</head>
+<body>
+  <h2>QR Attendance (Scan + GPS)</h2>
+  <div id="scanner">
+    <video id="video" autoplay></video>
+  </div>
+  <div class="status" id="statusText">Waiting for scan...</div>
+  <script>
+    const video = document.getElementById('video');
+    const statusText = document.getElementById('statusText');
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      .then(stream => { video.srcObject = stream; })
+      .catch(err => { statusText.textContent = 'Camera error: ' + err.message; });
+
+    setInterval(() => {
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        canvas.height = video.videoHeight;
+        canvas.width = video.videoWidth;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, canvas.width, canvas.height);
+        if (code) {
+          statusText.textContent = 'QR Scanned. Validating...';
+          try {
+            const decoded = JSON.parse(atob(code.data.split('.')[1]));
+            const qrPayload = {
+              branch: decoded.branch,
+              subdivision: decoded.subdivision,
+              type: decoded.type,
+            };
+            const employeeId = localStorage.getItem("empId");
+            handleQRScanAndValidate(qrPayload, employeeId, statusText);
+          } catch (err) {
+            statusText.textContent = 'Invalid QR Code.';
+          }
+        }
+      }
+    }, 1500);
+  </script>
+</body>
+</html>
