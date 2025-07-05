@@ -1,13 +1,67 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
-  <title>OTP Test - Firebase</title>
-  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js"></script>
-  <script src="https://www.google.com/recaptcha/api.js"></script>
+  <title>OTP Test - Firebase Modular</title>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, signInWithPhoneNumber, RecaptchaVerifier } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    // ✅ Replace with your own Firebase config
+    const firebaseConfig = {
+            apiKey: "AIzaSyBU3K7gRzqiqQt3o9thoEpd06ReLGVmm_w",
+            authDomain: "diya-hero.firebaseapp.com",
+            databaseURL: "https://diya-hero-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "diya-hero",
+            storageBucket: "diya-hero.firebasestorage.app",
+            messagingSenderId: "455829653263",
+            appId: "1:455829653263:web:5a31c65bdab2b9cee0607a",
+            measurementId: "G-DZYHPLQD3F"
+        };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    let confirmationResult;
+
+    window.onload = () => {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible',
+        callback: () => {
+          console.log("reCAPTCHA verified");
+        },
+        'expired-callback': () => {
+          alert("reCAPTCHA expired. Try again.");
+        }
+      });
+      recaptchaVerifier.render().then(widgetId => {
+        window.recaptchaWidgetId = widgetId;
+      });
+
+      document.getElementById('sendOtpBtn').addEventListener('click', async () => {
+        const phone = document.getElementById('phoneNumber').value;
+        const appVerifier = window.recaptchaVerifier;
+        try {
+          confirmationResult = await signInWithPhoneNumber(auth, phone, appVerifier);
+          document.getElementById('statusMsg').innerText = '✅ OTP Sent!';
+        } catch (error) {
+          console.error(error);
+          document.getElementById('statusMsg').innerText = '❌ Error: ' + error.message;
+        }
+      });
+
+      document.getElementById('verifyOtpBtn').addEventListener('click', async () => {
+        const otp = document.getElementById('otpInput').value;
+        try {
+          const result = await confirmationResult.confirm(otp);
+          document.getElementById('statusMsg').innerText = '✅ Success! Phone: ' + result.user.phoneNumber;
+        } catch (error) {
+          console.error(error);
+          document.getElementById('statusMsg').innerText = '❌ Invalid OTP: ' + error.message;
+        }
+      });
+    };
+  </script>
 </head>
 <body>
-  <h2>📲 Firebase OTP Test</h2>
+  <h2>📲 Firebase OTP Test (Modular SDK)</h2>
 
   <input type="tel" id="phoneNumber" placeholder="+91xxxxxxxxxx" />
   <button id="sendOtpBtn">Send OTP</button>
@@ -19,57 +73,5 @@
   <button id="verifyOtpBtn">Verify OTP</button>
 
   <p id="statusMsg"></p>
-
-  <script>
-    // 1. Your Firebase config
-
-    const firebaseConfig = {
-            apiKey: "AIzaSyBU3K7gRzqiqQt3o9thoEpd06ReLGVmm_w",
-            authDomain: "diya-hero.firebaseapp.com",
-            databaseURL: "https://diya-hero-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "diya-hero",
-            storageBucket: "diya-hero.firebasestorage.app",
-            messagingSenderId: "455829653263",
-            appId: "1:455829653263:web:5a31c65bdab2b9cee0607a",
-            measurementId: "G-DZYHPLQD3F"
-        };
-
-
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-
-    // 2. Setup reCAPTCHA
-    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-      size: 'invisible',
-      callback: () => { sendOTP(); }
-    });
-
-    let confirmationResult = null;
-
-    // 3. Send OTP
-    document.getElementById('sendOtpBtn').addEventListener('click', async () => {
-      const phone = document.getElementById('phoneNumber').value;
-      const appVerifier = window.recaptchaVerifier;
-
-      try {
-        confirmationResult = await auth.signInWithPhoneNumber(phone, appVerifier);
-        document.getElementById('statusMsg').innerText = '✅ OTP Sent!';
-      } catch (error) {
-        console.error(error);
-        document.getElementById('statusMsg').innerText = '❌ Error: ' + error.message;
-      }
-    });
-
-    // 4. Verify OTP
-    document.getElementById('verifyOtpBtn').addEventListener('click', async () => {
-      const otp = document.getElementById('otpInput').value;
-      try {
-        const result = await confirmationResult.confirm(otp);
-        document.getElementById('statusMsg').innerText = '✅ Login Success: ' + result.user.phoneNumber;
-      } catch (error) {
-        document.getElementById('statusMsg').innerText = '❌ Invalid OTP: ' + error.message;
-      }
-    });
-  </script>
 </body>
 </html>
