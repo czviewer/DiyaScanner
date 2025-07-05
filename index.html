@@ -31,7 +31,8 @@
             min-height: 100vh;
             margin: 0;
             color: #333;
-            padding: 16px; /* Responsive padding for body */
+            padding: 16px;
+            /* Responsive padding for body */
         }
 
         /* Base card/container styles */
@@ -39,18 +40,23 @@
             background-color: #ffffff;
             border-radius: 12px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            padding: 24px; /* Default padding for cards */
+            padding: 24px;
+            /* Default padding for cards */
             width: 100%;
-            max-width: 480px; /* Max width for mobile-focused cards */
+            max-width: 480px;
+            /* Max width for mobile-focused cards */
             animation: fadeIn 0.5s ease-out;
-            display: flex; /* Ensure cards are flex containers for internal alignment */
+            display: flex;
+            /* Ensure cards are flex containers for internal alignment */
             flex-direction: column;
-            gap: 20px; /* Consistent spacing between elements in cards */
+            gap: 20px;
+            /* Consistent spacing between elements in cards */
         }
 
         /* Wider app screen container */
         .app-screen-card {
-            max-width: 800px; /* Wider max-width for the main app screen */
+            max-width: 800px;
+            /* Wider max-width for the main app screen */
         }
 
         @keyframes fadeIn {
@@ -58,6 +64,7 @@
                 opacity: 0;
                 transform: translateY(20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -66,8 +73,10 @@
 
         /* Form group styling */
         .form-group {
-            margin-bottom: 16px; /* Consistent spacing for form groups */
+            margin-bottom: 16px;
+            /* Consistent spacing for form groups */
         }
+
         .form-group:last-child {
             margin-bottom: 0;
         }
@@ -80,21 +89,26 @@
         input[type="tel"] {
             width: 100%;
             padding: 12px 16px;
-            border: 1px solid #e2e8f0; /* Light gray border */
+            border: 1px solid #e2e8f0;
+            /* Light gray border */
             border-radius: 8px;
             font-size: 1rem;
             line-height: 1.5;
-            color: #4a5568; /* Darker text color */
+            color: #4a5568;
+            /* Darker text color */
             transition: all 0.2s ease-in-out;
         }
+
         input[type="email"]:focus,
         input[type="password"]:focus,
         input[type="text"]:focus,
         input[type="number"]:focus,
         input[type="tel"]:focus {
             outline: none;
-            border-color: #3b82f6; /* Blue border on focus */
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25); /* Light blue shadow on focus */
+            border-color: #3b82f6;
+            /* Blue border on focus */
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+            /* Light blue shadow on focus */
         }
 
         /* Base button styles */
@@ -110,12 +124,15 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            width: 100%; /* Full width by default for mobile-first */
+            width: 100%;
+            /* Full width by default for mobile-first */
         }
+
         .btn:hover {
             transform: translateY(-1px);
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         }
+
         .btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
@@ -125,32 +142,47 @@
 
         /* Specific button colors */
         .btn-primary {
-            background-color: #2563eb; /* Blue-700 */
+            background-color: #2563eb;
+            /* Blue-700 */
             color: #ffffff;
         }
+
         .btn-primary:hover:not(:disabled) {
-            background-color: #1d4ed8; /* Blue-800 */
+            background-color: #1d4ed8;
+            /* Blue-800 */
         }
+
         .btn-secondary {
-            background-color: #10b981; /* Teal-500 */
+            background-color: #10b981;
+            /* Teal-500 */
             color: #ffffff;
         }
+
         .btn-secondary:hover:not(:disabled) {
-            background-color: #047857; /* Teal-600 */
+            background-color: #047857;
+            /* Teal-600 */
         }
+
         .btn-neutral {
-            background-color: #6b7280; /* Gray-500 */
+            background-color: #6b7280;
+            /* Gray-500 */
             color: #ffffff;
         }
+
         .btn-neutral:hover:not(:disabled) {
-            background-color: #4b5563; /* Gray-600 */
+            background-color: #4b5563;
+            /* Gray-600 */
         }
+
         .btn-danger {
-            background-color: #ef4444; /* Red-600 */
+            background-color: #ef4444;
+            /* Red-600 */
             color: #ffffff;
         }
+
         .btn-danger:hover:not(:disabled) {
-            background-color: #dc2626; /* Red-700 */
+            background-color: #dc2626;
+            /* Red-700 */
         }
 
         /* Message box styling */
@@ -161,15 +193,23 @@
             text-align: center;
             margin-top: 16px;
         }
+
         .message-box.error {
-            background-color: #fee2e2; /* Red-100 */
-            color: #b91c1c; /* Red-700 */
-            border: 1px solid #fca5a5; /* Red-200 */
+            background-color: #fee2e2;
+            /* Red-100 */
+            color: #b91c1c;
+            /* Red-700 */
+            border: 1px solid #fca5a5;
+            /* Red-200 */
         }
+
         .message-box.success {
-            background-color: #d1fae5; /* Green-100 */
-            color: #065f46; /* Green-700 */
-            border: 1px solid #a7f3d0; /* Green-200 */
+            background-color: #d1fae5;
+            /* Green-100 */
+            color: #065f46;
+            /* Green-700 */
+            border: 1px solid #a7f3d0;
+            /* Green-200 */
         }
 
         /* Modal styling */
@@ -188,10 +228,12 @@
             visibility: hidden;
             transition: opacity 0.3s ease, visibility 0.3s ease;
         }
+
         .modal-overlay.show {
             opacity: 1;
             visibility: visible;
         }
+
         .modal-content {
             background-color: #ffffff;
             padding: 32px;
@@ -204,31 +246,39 @@
             opacity: 0;
             transition: transform 0.3s ease, opacity 0.3s ease;
         }
+
         .modal-overlay.show .modal-content {
             transform: translateY(0);
             opacity: 1;
         }
+
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 24px;
         }
+
         .modal-close-btn {
             background: none;
             border: none;
             font-size: 28px;
             font-weight: bold;
-            color: #9ca3af; /* Gray-400 */
+            color: #9ca3af;
+            /* Gray-400 */
             cursor: pointer;
             transition: color 0.2s ease;
         }
+
         .modal-close-btn:hover {
-            color: #4b5563; /* Gray-600 */
+            color: #4b5563;
+            /* Gray-600 */
         }
+
         .modal-body {
             margin-bottom: 24px;
         }
+
         .modal-footer {
             text-align: right;
         }
@@ -244,7 +294,10 @@
             border-bottom: 1px solid #e2e8f0;
             gap: 12px;
         }
-        @media (min-width: 640px) { /* sm breakpoint */
+
+        @media (min-width: 640px) {
+
+            /* sm breakpoint */
             .app-header {
                 flex-direction: row;
                 gap: 0;
@@ -256,6 +309,7 @@
             color: #4a5568;
             text-align: center;
         }
+
         @media (min-width: 640px) {
             .user-info-display {
                 text-align: left;
@@ -263,25 +317,37 @@
         }
 
         .location-status-box {
-            background-color: #eff6ff; /* Blue-50 */
-            border: 1px solid #bfdbfe; /* Blue-200 */
+            background-color: #eff6ff;
+            /* Blue-50 */
+            border: 1px solid #bfdbfe;
+            /* Blue-200 */
             border-radius: 8px;
             padding: 16px;
             margin-bottom: 24px;
             text-align: center;
-            font-size: 1.125rem; /* text-lg */
+            font-size: 1.125rem;
+            /* text-lg */
             font-weight: 600;
-            color: #1e40af; /* Blue-800 */
+            color: #1e40af;
+            /* Blue-800 */
         }
+
         .location-status-box.verified {
-            background-color: #d1fae5; /* Green-100 */
-            border-color: #a7f3d0; /* Green-200 */
-            color: #065f46; /* Green-700 */
+            background-color: #d1fae5;
+            /* Green-100 */
+            border-color: #a7f3d0;
+            /* Green-200 */
+            color: #065f46;
+            /* Green-700 */
         }
+
         .location-status-box.error {
-            background-color: #fee2e2; /* Red-100 */
-            border-color: #fca5a5; /* Red-200 */
-            color: #b91c1c; /* Red-700 */
+            background-color: #fee2e2;
+            /* Red-100 */
+            border-color: #fca5a5;
+            /* Red-200 */
+            color: #b91c1c;
+            /* Red-700 */
         }
 
         /* Checkbox and Radio button styling */
@@ -290,28 +356,37 @@
             margin-right: 8px;
             width: 20px;
             height: 20px;
-            border-radius: 4px; /* Slightly rounded for checkboxes */
-            border: 1px solid #cbd5e0; /* Gray-300 */
-            appearance: none; /* Hide default browser styles */
+            border-radius: 4px;
+            /* Slightly rounded for checkboxes */
+            border: 1px solid #cbd5e0;
+            /* Gray-300 */
+            appearance: none;
+            /* Hide default browser styles */
             -webkit-appearance: none;
             -moz-appearance: none;
             cursor: pointer;
             transition: all 0.2s ease-in-out;
             position: relative;
-            top: 2px; /* Small adjustment for vertical alignment */
+            top: 2px;
+            /* Small adjustment for vertical alignment */
         }
+
         input[type="checkbox"]:checked,
         input[type="radio"]:checked {
-            background-color: #2563eb; /* Blue-700 */
+            background-color: #2563eb;
+            /* Blue-700 */
             border-color: #2563eb;
         }
+
         input[type="checkbox"]:focus,
         input[type="radio"]:focus {
             outline: none;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
         }
+
         input[type="checkbox"]:checked::before {
-            content: '\2713'; /* Checkmark unicode */
+            content: '\2713';
+            /* Checkmark unicode */
             display: block;
             color: white;
             font-size: 14px;
@@ -322,9 +397,12 @@
             top: 50%;
             transform: translate(-50%, -50%);
         }
+
         input[type="radio"] {
-            border-radius: 50%; /* Make radios perfectly round */
+            border-radius: 50%;
+            /* Make radios perfectly round */
         }
+
         input[type="radio"]:checked::before {
             content: '';
             display: block;
@@ -337,11 +415,13 @@
             top: 50%;
             transform: translate(-50%, -50%);
         }
+
         input[type="checkbox"]:disabled,
         input[type="radio"]:disabled {
             opacity: 0.5;
             cursor: not-allowed;
-            background-color: #e2e8f0; /* Light gray for disabled */
+            background-color: #e2e8f0;
+            /* Light gray for disabled */
         }
 
         .radio-group {
@@ -350,6 +430,7 @@
             gap: 12px;
             margin-top: 12px;
         }
+
         @media (min-width: 640px) {
             .radio-group {
                 flex-direction: row;
@@ -363,17 +444,23 @@
             gap: 16px;
             margin-top: 32px;
         }
+
         @media (min-width: 640px) {
             .attendance-buttons {
                 flex-direction: row;
                 justify-content: space-between;
             }
+
             .attendance-buttons .btn {
-                width: auto; /* Allow buttons to take natural width */
-                flex-grow: 1; /* Distribute space evenly */
+                width: auto;
+                /* Allow buttons to take natural width */
+                flex-grow: 1;
+                /* Distribute space evenly */
             }
+
             .attendance-buttons .btn:first-child {
-                margin-right: 16px; /* Space between buttons */
+                margin-right: 16px;
+                /* Space between buttons */
             }
         }
     </style>
@@ -408,10 +495,13 @@
 
             <!-- Phone Verification Form -->
             <div id="phone-verify-form" class="space-y-5 hidden">
-                <p class="text-lg text-gray-700 text-center">Please enter the last 4 digits of your registered phone number.</p>
+                <p class="text-lg text-gray-700 text-center">Please enter the last 4 digits of your registered phone
+                    number.</p>
                 <div class="form-group">
-                    <label for="last-4-digits" class="block text-gray-700 text-sm font-semibold mb-2">Last 4 Digits</label>
-                    <input type="number" id="last-4-digits" placeholder="e.g., 1234" maxlength="4" oninput="this.value=this.value.slice(0,4)">
+                    <label for="last-4-digits" class="block text-gray-700 text-sm font-semibold mb-2">Last 4
+                        Digits</label>
+                    <input type="number" id="last-4-digits" placeholder="e.g., 1234" maxlength="4"
+                        oninput="this.value=this.value.slice(0,4)">
                 </div>
                 <button id="verify-phone-btn" class="btn btn-primary">
                     Verify Phone
@@ -427,7 +517,8 @@
                 <p class="text-lg text-gray-700 text-center">An OTP has been sent to your registered phone number.</p>
                 <div class="form-group">
                     <label for="otp-input" class="block text-gray-700 text-sm font-semibold mb-2">Enter OTP</label>
-                    <input type="number" id="otp-input" placeholder="Enter 6-digit OTP" maxlength="6" oninput="this.value=this.value.slice(0,6)">
+                    <input type="number" id="otp-input" placeholder="Enter 6-digit OTP" maxlength="6"
+                        oninput="this.value=this.value.slice(0,6)">
                 </div>
                 <button id="verify-otp-btn" class="btn btn-primary">
                     Verify OTP
@@ -454,11 +545,13 @@
                     <input type="password" id="signup-password" placeholder="Create a password">
                 </div>
                 <div class="form-group">
-                    <label for="signup-employee-id" class="block text-gray-700 text-sm font-semibold mb-2">Employee ID</label>
+                    <label for="signup-employee-id" class="block text-gray-700 text-sm font-semibold mb-2">Employee
+                        ID</label>
                     <input type="text" id="signup-employee-id" placeholder="Enter your employee ID">
                 </div>
                 <div class="form-group">
-                    <label for="signup-phone" class="block text-gray-700 text-sm font-semibold mb-2">Phone Number (e.g., +919876543210)</label>
+                    <label for="signup-phone" class="block text-gray-700 text-sm font-semibold mb-2">Phone Number (e.g.,
+                        +919876543210)</label>
                     <input type="tel" id="signup-phone" placeholder="Enter your phone number with country code">
                 </div>
                 <button id="signup-btn" class="btn btn-primary">
@@ -489,7 +582,8 @@
 
             <div id="attendance-section" class="space-y-6 hidden">
                 <div class="form-group">
-                    <label for="morning-check" class="flex items-center text-lg font-semibold text-gray-700 cursor-pointer">
+                    <label for="morning-check"
+                        class="flex items-center text-lg font-semibold text-gray-700 cursor-pointer">
                         <input type="checkbox" id="morning-check">
                         Morning Attendance
                     </label>
@@ -1469,9 +1563,9 @@
                 const userRef = ref(db, `users/${user.uid}`);
                 try {
                     const snapshot = await get(userRef);
-                    console.log("📦 /users data fetched:", snapshot.val());
-                    const userData = snapshot.val();
 
+                    const userData = snapshot.val();
+                    console.log("📦 /users data fetched:", snapshot.val());
                     // Log userData to inspect its structure
                     console.log('User Data from DB in onAuthStateChanged:', userData);
 
