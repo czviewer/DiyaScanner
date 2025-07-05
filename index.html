@@ -1462,11 +1462,14 @@
 
         // Initial authentication state check
         onAuthStateChanged(auth, async (user) => {
+            console.log("🔥 UID during state check:", user?.uid);
+
             if (user) {
                 // User is signed in, fetch user data from Realtime Database
                 const userRef = ref(db, `users/${user.uid}`);
                 try {
                     const snapshot = await get(userRef);
+                    console.log("📦 /users data fetched:", snapshot.val());
                     const userData = snapshot.val();
 
                     // Log userData to inspect its structure
