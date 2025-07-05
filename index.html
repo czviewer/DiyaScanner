@@ -9,8 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Always show a vertical scrollbar to prevent layout shifts when content overflows */
         html {
-            /* Always show a vertical scrollbar to prevent layout shifts when content overflows */
             overflow-y: scroll;
         }
 
@@ -396,156 +396,186 @@
 <body>
     <!-- Login/Signup Container -->
     <div id="auth-container" class="container">
-        <h1>Absentease Self-Attendance</h1>
+        <h1 class="text-3xl font-bold text-blue-800 mb-6">Absentease Self-Attendance</h1>
 
         <!-- Login Form -->
-        <div id="login-form" class="space-y-4">
+        <div id="login-form" class="space-y-6">
             <div class="form-group">
-                <label for="login-email">Email</label>
-                <input type="email" id="login-email" placeholder="Enter your email">
+                <label for="login-email" class="block text-gray-700 text-sm font-semibold mb-2">Email</label>
+                <input type="email" id="login-email" placeholder="Enter your email"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 ease-in-out">
             </div>
             <div class="form-group">
-                <label for="login-password">Password</label>
-                <input type="password" id="login-password" placeholder="Enter your password">
+                <label for="login-password" class="block text-gray-700 text-sm font-semibold mb-2">Password</label>
+                <input type="password" id="login-password" placeholder="Enter your password"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 ease-in-out">
             </div>
-            <button id="login-btn" class="btn btn-primary">
-                <i class="fas fa-sign-in-alt"></i> Login
+            <button id="login-btn"
+                class="btn btn-primary bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition duration-300 ease-in-out">
+                <i class="fas fa-sign-in-alt mr-2"></i> Login
             </button>
-            <div id="login-message" class="message error"></div>
-            <button id="show-signup-btn" class="btn btn-info mt-4">
+            <div id="login-message" class="message error text-red-700 bg-red-100 border border-red-200 p-3 rounded-lg">
+            </div>
+            <button id="show-signup-btn"
+                class="btn btn-info bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition duration-300 ease-in-out mt-4">
                 New Employee? Sign Up
             </button>
         </div>
 
         <!-- Phone Verification Form (after email/password login) -->
-        <div id="phone-verify-form" class="space-y-4 hidden">
+        <div id="phone-verify-form" class="space-y-6 hidden">
             <p class="text-lg text-gray-700 mb-4">Please enter the last 4 digits of your registered phone number.</p>
             <div class="form-group">
-                <label for="last-4-digits">Last 4 Digits</label>
-                <input type="number" id="last-4-digits" placeholder="e.g., 1234" maxlength="4" oninput="this.value=this.value.slice(0,4)">
+                <label for="last-4-digits" class="block text-gray-700 text-sm font-semibold mb-2">Last 4 Digits</label>
+                <input type="number" id="last-4-digits" placeholder="e.g., 1234" maxlength="4"
+                    oninput="this.value=this.value.slice(0,4)"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 ease-in-out">
             </div>
-            <button id="verify-phone-btn" class="btn btn-primary">
+            <button id="verify-phone-btn"
+                class="btn btn-primary bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition duration-300 ease-in-out">
                 Verify Phone
             </button>
-            <div id="phone-verify-message" class="message error"></div>
-            <button id="back-to-login-btn" class="btn btn-info mt-4">
+            <div id="phone-verify-message"
+                class="message error text-red-700 bg-red-100 border border-red-200 p-3 rounded-lg"></div>
+            <button id="back-to-login-btn"
+                class="btn btn-info bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition duration-300 ease-in-out mt-4">
                 Back to Login
             </button>
         </div>
 
         <!-- OTP Verification Form -->
-        <div id="otp-form" class="space-y-4 hidden">
+        <div id="otp-form" class="space-y-6 hidden">
             <p class="text-lg text-gray-700 mb-4">An OTP has been sent to your registered phone number.</p>
             <div class="form-group">
-                <label for="otp-input">Enter OTP</label>
-                <input type="number" id="otp-input" placeholder="Enter 6-digit OTP" maxlength="6" oninput="this.value=this.value.slice(0,6)">
+                <label for="otp-input" class="block text-gray-700 text-sm font-semibold mb-2">Enter OTP</label>
+                <input type="number" id="otp-input" placeholder="Enter 6-digit OTP" maxlength="6"
+                    oninput="this.value=this.value.slice(0,6)"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 ease-in-out">
             </div>
-            <button id="verify-otp-btn" class="btn btn-primary">
+            <button id="verify-otp-btn"
+                class="btn btn-primary bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition duration-300 ease-in-out">
                 Verify OTP
             </button>
-            <div id="otp-message" class="message error"></div>
-            <button id="resend-otp-btn" class="btn btn-info mt-4" disabled>
+            <div id="otp-message" class="message error text-red-700 bg-red-100 border border-red-200 p-3 rounded-lg">
+            </div>
+            <button id="resend-otp-btn"
+                class="btn btn-info bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition duration-300 ease-in-out mt-4"
+                disabled>
                 Resend OTP <span id="countdown-timer"></span>
             </button>
-            <div id="recaptcha-container"></div>
+            <div id="recaptcha-container" class="mt-4"></div>
         </div>
 
 
         <!-- Signup Form -->
-        <div id="signup-form" class="space-y-4 hidden">
+        <div id="signup-form" class="space-y-6 hidden">
             <div class="form-group">
-                <label for="signup-name">Name</label>
-                <input type="text" id="signup-name" placeholder="Enter your full name">
+                <label for="signup-name" class="block text-gray-700 text-sm font-semibold mb-2">Name</label>
+                <input type="text" id="signup-name" placeholder="Enter your full name"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 ease-in-out">
             </div>
             <div class="form-group">
-                <label for="signup-email">Email</label>
-                <input type="email" id="signup-email" placeholder="Enter your email">
+                <label for="signup-email" class="block text-gray-700 text-sm font-semibold mb-2">Email</label>
+                <input type="email" id="signup-email" placeholder="Enter your email"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 ease-in-out">
             </div>
             <div class="form-group">
-                <label for="signup-password">Password</label>
-                <input type="password" id="signup-password" placeholder="Create a password">
+                <label for="signup-password" class="block text-gray-700 text-sm font-semibold mb-2">Password</label>
+                <input type="password" id="signup-password" placeholder="Create a password"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 ease-in-out">
             </div>
             <div class="form-group">
-                <label for="signup-employee-id">Employee ID</label>
-                <input type="text" id="signup-employee-id" placeholder="Enter your employee ID">
+                <label for="signup-employee-id" class="block text-gray-700 text-sm font-semibold mb-2">Employee
+                    ID</label>
+                <input type="text" id="signup-employee-id" placeholder="Enter your employee ID"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 ease-in-out">
             </div>
             <div class="form-group">
-                <label for="signup-phone">Phone Number (e.g., +919876543210)</label>
-                <input type="tel" id="signup-phone" placeholder="Enter your phone number with country code">
+                <label for="signup-phone" class="block text-gray-700 text-sm font-semibold mb-2">Phone Number (e.g.,
+                    +919876543210)</label>
+                <input type="tel" id="signup-phone" placeholder="Enter your phone number with country code"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 ease-in-out">
             </div>
-            <button id="signup-btn" class="btn btn-primary">
-                <i class="fas fa-user-plus"></i> Sign Up
+            <button id="signup-btn"
+                class="btn btn-primary bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition duration-300 ease-in-out">
+                <i class="fas fa-user-plus mr-2"></i> Sign Up
             </button>
-            <div id="signup-message" class="message error"></div>
-            <button id="show-login-btn" class="btn btn-info mt-4">
+            <div id="signup-message" class="message error text-red-700 bg-red-100 border border-red-200 p-3 rounded-lg">
+            </div>
+            <button id="show-login-btn"
+                class="btn btn-info bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition duration-300 ease-in-out mt-4">
                 Already have an account? Login
             </button>
         </div>
     </div>
 
     <!-- Main App Screen -->
-    <div id="app-screen" class="app-container">
-        <div class="header-bar">
-            <h2>Absentease Self-Attendance</h2>
-            <div class="user-info">
-                <span id="user-display-name"></span>
-                <button id="logout-btn" class="btn btn-danger btn-sm">
-                    <i class="fas fa-sign-out-alt"></i> Logout
+    <div id="app-screen" class="app-container max-w-4xl mx-auto my-8 p-6 bg-white rounded-xl shadow-lg">
+        <div class="header-bar flex flex-col sm:flex-row justify-between items-center pb-4 mb-4 border-b border-gray-200">
+            <h2 class="text-2xl font-bold text-blue-800 mb-2 sm:mb-0">Absentease Self-Attendance</h2>
+            <div class="user-info flex items-center gap-4">
+                <span id="user-display-name" class="font-semibold text-gray-700 text-lg"></span>
+                <button id="logout-btn"
+                    class="btn btn-danger bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition duration-300 ease-in-out">
+                    <i class="fas fa-sign-out-alt mr-2"></i> Logout
                 </button>
             </div>
         </div>
 
-        <div id="location-status" class="location-info">
-            <p><strong>Location Status:</strong> <span id="location-message">Checking location...</span></p>
-            <!-- GPS coordinates removed from UI -->
+        <div id="location-status" class="location-info bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-left text-blue-800">
+            <p class="text-lg font-semibold">Location Status: <span id="location-message" class="font-normal">Checking location...</span></p>
         </div>
 
-        <div id="attendance-section" class="attendance-form" style="display: none;">
-            <div class="form-group">
-                <label for="morning-check">
-                    <input type="checkbox" id="morning-check"> Morning Attendance
+        <div id="attendance-section" class="attendance-form text-left" style="display: none;">
+            <div class="form-group mb-4">
+                <label for="morning-check" class="flex items-center text-lg font-semibold text-gray-700 cursor-pointer">
+                    <input type="checkbox" id="morning-check" class="form-checkbox h-5 w-5 text-blue-600 rounded-md mr-3 transition duration-150 ease-in-out">
+                    Morning Attendance
                 </label>
             </div>
 
-            <div class="form-group">
-                <label>Afternoon Status:</label>
-                <div class="radio-group">
-                    <label for="an-enters">
-                        <input type="radio" id="an-enters" name="afternoon-status" value="Enters"> Enters
+            <div class="form-group mb-6">
+                <label class="block text-lg font-semibold text-gray-700 mb-3">Afternoon Status:</label>
+                <div class="radio-group flex flex-col sm:flex-row sm:gap-6 gap-3">
+                    <label for="an-enters" class="flex items-center text-base text-gray-700 cursor-pointer">
+                        <input type="radio" id="an-enters" name="afternoon-status" value="Enters" class="form-radio h-4 w-4 text-blue-600 mr-2 transition duration-150 ease-in-out"> Enters
                     </label>
-                    <label for="an-leaves">
-                        <input type="radio" id="an-leaves" name="afternoon-status" value="Leaves"> Leaves
+                    <label for="an-leaves" class="flex items-center text-base text-gray-700 cursor-pointer">
+                        <input type="radio" id="an-leaves" name="afternoon-status" value="Leaves" class="form-radio h-4 w-4 text-blue-600 mr-2 transition duration-150 ease-in-out"> Leaves
                     </label>
-                    <label for="an-none">
-                        <input type="radio" id="an-none" name="afternoon-status" value="None" checked> None
+                    <label for="an-none" class="flex items-center text-base text-gray-700 cursor-pointer">
+                        <input type="radio" id="an-none" name="afternoon-status" value="None" checked class="form-radio h-4 w-4 text-blue-600 mr-2 transition duration-150 ease-in-out"> None
                     </label>
                 </div>
             </div>
 
-            <div class="btn-group">
-                <button id="refresh-location-btn" class="btn btn-info">
-                    <i class="fas fa-sync-alt"></i> Refresh Location
+            <div class="btn-group flex flex-col sm:flex-row gap-4 mt-8">
+                <button id="refresh-location-btn"
+                    class="btn btn-info bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition duration-300 ease-in-out">
+                    <i class="fas fa-sync-alt mr-2"></i> Refresh Location
                 </button>
-                <button id="submit-attendance-btn" class="btn btn-primary" disabled>
-                    <i class="fas fa-check-circle"></i> Submit Attendance
+                <button id="submit-attendance-btn"
+                    class="btn btn-primary bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition duration-300 ease-in-out"
+                    disabled>
+                    <i class="fas fa-check-circle mr-2"></i> Submit Attendance
                 </button>
             </div>
-            <div id="attendance-message" class="message success"></div>
+            <div id="attendance-message" class="message success text-green-700 bg-green-100 border border-green-200 p-3 rounded-lg mt-4"></div>
         </div>
     </div>
 
     <!-- Modal for messages -->
     <div id="message-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modal-title"></h2>
-                <span class="close-button">&times;</span>
+        <div class="modal-content bg-white p-8 rounded-xl shadow-xl">
+            <div class="modal-header flex justify-between items-center mb-6">
+                <h2 id="modal-title" class="text-2xl font-bold text-blue-800"></h2>
+                <span class="close-button text-gray-500 hover:text-gray-800 text-3xl font-bold cursor-pointer">&times;</span>
             </div>
-            <div class="modal-body">
-                <p id="modal-message"></p>
+            <div class="modal-body mb-8">
+                <p id="modal-message" class="text-lg text-gray-700 leading-relaxed"></p>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-primary btn-ok">OK</button>
+            <div class="modal-footer text-right">
+                <button class="btn btn-primary btn-ok bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-5 rounded-lg shadow-md hover:shadow-lg transition duration-300 ease-in-out">OK</button>
             </div>
         </div>
     </div>
@@ -637,6 +667,7 @@
         const modalOkBtn = messageModal.querySelector('.btn-ok');
 
         // Global variables for Phone Auth
+        let currentUserData = null; // Defined at the top-level of the module
         let confirmationResult = null;
         let phoneNumberToVerify = ''; // Stores the full phone number from DB
         const OTP_COOLDOWN_SECONDS = 120; // 2 minutes
@@ -725,7 +756,7 @@
          */
         function displayAuthMessage(messageElement, message, isError) {
             messageElement.textContent = message;
-            messageElement.className = `message ${isError ? 'error' : 'success'}`;
+            messageElement.className = `message ${isError ? 'error' : 'success'} ${isError ? 'text-red-700 bg-red-100 border border-red-200' : 'text-green-700 bg-green-100 border border-green-200'} p-3 rounded-lg`;
             messageElement.style.display = 'block';
         }
 
@@ -736,7 +767,7 @@
          */
         function displayAttendanceMessage(message, isError) {
             attendanceMessage.textContent = message;
-            attendanceMessage.className = `message ${isError ? 'error' : 'success'}`;
+            attendanceMessage.className = `message ${isError ? 'error' : 'success'} ${isError ? 'text-red-700 bg-red-100 border border-red-200' : 'text-green-700 bg-green-100 border border-green-200'} p-3 rounded-lg`;
             attendanceMessage.style.display = 'block';
             setTimeout(() => {
                 attendanceMessage.style.display = 'none';
