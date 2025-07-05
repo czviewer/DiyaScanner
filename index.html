@@ -34,6 +34,9 @@
             max-width: 500px;
             text-align: center;
             animation: fadeIn 0.5s ease-out;
+            /* Ensure container itself is centered within the flex body */
+            margin-left: auto;
+            margin-right: auto;
         }
 
         @keyframes fadeIn {
@@ -58,6 +61,7 @@
         .form-group {
             margin-bottom: 20px;
             text-align: left;
+            /* Ensure labels and inputs align left within their group */
         }
 
         .form-group label {
@@ -264,6 +268,8 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             padding: 20px;
             animation: fadeIn 0.5s ease-out;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .header-bar {
@@ -857,14 +863,15 @@
                         return; // Stop further execution
                     }
 
-                    if (currentUserData.phone && currentUserData.phone.trim() !== "") {
+                    // Check if phone exists and is a string before calling trim()
+                    if (typeof currentUserData.phone === 'string' && currentUserData.phone.trim() !== "") {
                         phoneNumberToVerify = currentUserData.phone;
                         // Successfully logged in with email/password, proceed to phone verification
                         toggleAuthView('phone-verify');
                     } else {
-                        // Phone number missing in DB
+                        // Phone number missing in DB or not a string
                         await signOut(auth); // Log out immediately
-                        showModal('Phone Not Found', 'Your registered phone number is missing. Please contact Admin.', () => {
+                        showModal('Phone Not Found', 'Your registered phone number is missing or invalid. Please contact Admin.', () => {
                             toggleAuthView('login');
                         });
                     }
@@ -1540,14 +1547,15 @@
                         // User logged in but OTP not verified, redirect to OTP flow
                         authContainer.style.display = 'flex';
                         appScreen.style.display = 'none';
-                        if (userData.phone && userData.phone.trim() !== "") {
+                        // Check if phone exists and is a string before calling trim()
+                        if (typeof userData.phone === 'string' && userData.phone.trim() !== "") {
                             phoneNumberToVerify = userData.phone; // Set phone for OTP sending
                             toggleAuthView('phone-verify'); // Go to phone verification
                             showModal('Verification Required', 'Please verify your phone number to access the app.');
                         } else {
-                            // Phone number missing for an existing user, log out
+                            // Phone number missing for an existing user or not a string
                             await signOut(auth);
-                            showModal('Phone Not Found', 'Your registered phone number is missing. Please contact Admin.', () => {
+                            showModal('Phone Not Found', 'Your registered phone number is missing or invalid. Please contact Admin.', () => {
                                 toggleAuthView('login');
                             });
                         }
