@@ -1,34 +1,27 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html>
 <head>
-  <title>OTP Login Test</title>
+  <title>OTP Test - Firebase</title>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js"></script>
-  <style>
-    body { font-family: Arial; padding: 30px; background: #f5f5f5; }
-    input { padding: 10px; margin: 10px; width: 250px; }
-    button { padding: 10px 20px; margin: 10px; }
-    #recaptcha-container { margin: 20px 0; }
-    .message { margin: 10px 0; font-weight: bold; }
-  </style>
+  <script src="https://www.google.com/recaptcha/api.js"></script>
 </head>
 <body>
-  <h2>🔥 OTP Login Test</h2>
+  <h2>📲 Firebase OTP Test</h2>
 
-  <input type="tel" id="phoneNumber" placeholder="+91XXXXXXXXXX" />
-  <div id="recaptcha-container"></div>
+  <input type="tel" id="phoneNumber" placeholder="+91xxxxxxxxxx" />
   <button id="sendOtpBtn">Send OTP</button>
+  <br><br>
 
-  <div id="otpSection" style="display:none;">
-    <input type="text" id="otpCode" placeholder="Enter OTP" maxlength="6" />
-    <button id="verifyOtpBtn">Verify OTP</button>
-  </div>
+  <div id="recaptcha-container"></div>
 
-  <div id="message" class="message"></div>
+  <input type="text" id="otpInput" placeholder="Enter OTP" />
+  <button id="verifyOtpBtn">Verify OTP</button>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
-    import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
+  <p id="statusMsg"></p>
+
+  <script>
+    // 1. Your Firebase config
 
     const firebaseConfig = {
             apiKey: "AIzaSyBU3K7gRzqiqQt3o9thoEpd06ReLGVmm_w",
@@ -41,46 +34,42 @@
             measurementId: "G-DZYHPLQD3F"
         };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
 
-    let confirmationResult;
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
 
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+    // 2. Setup reCAPTCHA
+    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
       size: 'invisible',
-      callback: (response) => {
-        // reCAPTCHA solved
-        console.log("reCAPTCHA success");
-      },
-      'expired-callback': () => {
-        alert("reCAPTCHA expired. Please reload.");
+      callback: () => { sendOTP(); }
+    });
+
+    let confirmationResult = null;
+
+    // 3. Send OTP
+    document.getElementById('sendOtpBtn').addEventListener('click', async () => {
+      const phone = document.getElementById('phoneNumber').value;
+      const appVerifier = window.recaptchaVerifier;
+
+      try {
+        confirmationResult = await auth.signInWithPhoneNumber(phone, appVerifier);
+        document.getElementById('statusMsg').innerText = '✅ OTP Sent!';
+      } catch (error) {
+        console.error(error);
+        document.getElementById('statusMsg').innerText = '❌ Error: ' + error.message;
       }
     });
 
-    document.getElementById("sendOtpBtn").onclick = async () => {
-      const phone = document.getElementById("phoneNumber").value.trim();
-      if (!phone) return alert("Enter phone number");
-
+    // 4. Verify OTP
+    document.getElementById('verifyOtpBtn').addEventListener('click', async () => {
+      const otp = document.getElementById('otpInput').value;
       try {
-        confirmationResult = await signInWithPhoneNumber(auth, phone, window.recaptchaVerifier);
-        document.getElementById("otpSection").style.display = "block";
-        document.getElementById("message").textContent = "✅ OTP sent!";
+        const result = await confirmationResult.confirm(otp);
+        document.getElementById('statusMsg').innerText = '✅ Login Success: ' + result.user.phoneNumber;
       } catch (error) {
-        document.getElementById("message").textContent = "❌ Error: " + error.message;
+        document.getElementById('statusMsg').innerText = '❌ Invalid OTP: ' + error.message;
       }
-    };
-
-    document.getElementById("verifyOtpBtn").onclick = async () => {
-      const otp = document.getElementById("otpCode").value.trim();
-      if (otp.length !== 6) return alert("Enter valid 6-digit OTP");
-
-      try {
-        await confirmationResult.confirm(otp);
-        document.getElementById("message").textContent = "✅ OTP verified successfully!";
-      } catch (error) {
-        document.getElementById("message").textContent = "❌ Invalid OTP: " + error.message;
-      }
-    };
+    });
   </script>
 </body>
 </html>
