@@ -5,11 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diya-Hero Self-Attendance</title>
-    <!-- Font Awesome for icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <!-- Google Fonts - Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Global box-sizing for consistent layout */
@@ -416,14 +413,11 @@
 </head>
 
 <body>
-    <!-- Main Application Wrapper -->
     <div id="app-wrapper" class="w-full flex justify-center items-center">
 
-        <!-- Authentication Screens (Login, Phone Verify, OTP, Signup) -->
         <div id="auth-screens" class="card">
             <h1 class="text-2xl sm:text-3xl font-bold text-blue-800 text-center mb-4">Diya-Hero Self-Attendance</h1>
 
-            <!-- Login Form -->
             <div id="login-form" class="space-y-5">
                 <div class="form-group">
                     <label for="login-email" class="block text-gray-700 text-sm font-semibold mb-2">Email</label>
@@ -442,7 +436,6 @@
                 </button>
             </div>
 
-            <!-- Phone Verification Form -->
             <div id="phone-verify-form" class="space-y-5 hidden">
                 <p class="text-lg text-gray-700 text-center">Please enter the last 4 digits of your registered phone
                     number.</p>
@@ -461,7 +454,6 @@
                 </button>
             </div>
 
-            <!-- OTP Verification Form -->
             <div id="otp-form" class="space-y-5 hidden">
                 <p class="text-lg text-gray-700 text-center">An OTP has been sent to your registered phone number.</p>
                 <div class="form-group">
@@ -479,7 +471,6 @@
                 <div id="recaptcha-container" class="mt-4"></div>
             </div>
 
-            <!-- Signup Form -->
             <div id="signup-form" class="space-y-5 hidden">
                 <div class="form-group">
                     <label for="signup-name" class="block text-gray-700 text-sm font-semibold mb-2">Name</label>
@@ -513,7 +504,6 @@
             </div>
         </div>
 
-        <!-- Main App Screen -->
         <div id="app-screen" class="card app-screen-card hidden">
             <div class="app-header">
                 <h2 class="text-xl sm:text-2xl font-bold text-blue-800">Diya-Hero Self-Attendance</h2>
@@ -527,7 +517,7 @@
             <div id="location-status" class="location-status-box">
                 <p><span id="location-message">Checking location...</span></p>
             </div>
-            <div id="attendance-section" class="space-y-6 hidden">
+            <div id="attendance-section" class="space-y-6">
                 <div class="form-group">
                     <label for="morning-check"
                         class="flex items-center text-lg font-semibold text-gray-700 cursor-pointer">
@@ -561,7 +551,6 @@
         </div>
     </div>
 
-    <!-- Modal for messages -->
     <div id="message-modal-overlay" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -876,6 +865,7 @@
         async function checkUserLocationAndAttendance() {
             if (!currentUserData) {
                 showMessage(dom.locationMessage, "User data not loaded. Please log in again.", 'error');
+                dom.submitAttendanceBtn.disabled = true; // Disable submit if no user data
                 return;
             }
 
@@ -884,7 +874,7 @@
                 showModal('Employee ID Missing', 'Your employee ID is missing. Please contact Admin. Attendance will not be recorded.');
                 dom.locationStatus.classList.add('error');
                 dom.locationMessage.textContent = 'Employee ID missing.';
-                dom.attendanceSection.classList.add('hidden');
+                dom.submitAttendanceBtn.disabled = true; // Disable submit if employee ID missing
                 return;
             }
             if (!currentUserData.phone) {
@@ -893,14 +883,14 @@
                 });
                 dom.locationStatus.classList.add('error');
                 dom.locationMessage.textContent = 'Phone number missing.';
-                dom.attendanceSection.classList.add('hidden');
+                dom.submitAttendanceBtn.disabled = true; // Disable submit if phone number missing
                 return;
             }
 
             dom.locationStatus.classList.remove('verified', 'error');
             dom.locationMessage.textContent = 'Checking location...';
-            dom.attendanceSection.classList.add('hidden');
-            dom.submitAttendanceBtn.disabled = true;
+            // dom.attendanceSection.classList.add('hidden'); // REMOVED: Attendance section always visible
+            dom.submitAttendanceBtn.disabled = true; // Initially disable submit button until location is verified
 
             if ("geolocation" in navigator) {
                 try {
@@ -934,21 +924,21 @@
                             dom.locationStatus.classList.remove('error');
                             dom.locationStatus.classList.add('verified');
                             dom.locationMessage.textContent = `Location Verified: Within ${currentUserData.branch} branch.`;
-                            dom.attendanceSection.classList.remove('hidden');
+                            // dom.attendanceSection.classList.remove('hidden'); // REMOVED: Attendance section always visible
                             updateFormDisablementBasedOnTime(); // Enable/disable based on time
                         } else {
                             dom.locationStatus.classList.remove('verified');
                             dom.locationStatus.classList.add('error');
                             dom.locationMessage.textContent = `Location Error: You are ${distance.toFixed(2)}m away from ${currentUserData.branch} branch. Please move closer.`;
-                            dom.attendanceSection.classList.add('hidden');
-                            dom.submitAttendanceBtn.disabled = true;
+                            // dom.attendanceSection.classList.add('hidden'); // REMOVED: Attendance section always visible
+                            dom.submitAttendanceBtn.disabled = true; // Ensure submit is disabled if out of range
                         }
                     } else {
                         dom.locationStatus.classList.remove('verified');
                         dom.locationStatus.classList.add('error');
                         dom.locationMessage.textContent = `Branch location not found for ${currentUserData.branch}. Contact Admin.`;
-                        dom.attendanceSection.classList.add('hidden');
-                        dom.submitAttendanceBtn.disabled = true;
+                        // dom.attendanceSection.classList.add('hidden'); // REMOVED: Attendance section always visible
+                        dom.submitAttendanceBtn.disabled = true; // Ensure submit is disabled if branch not found
                     }
 
                 } catch (error) {
@@ -964,15 +954,15 @@
                     dom.locationStatus.classList.remove('verified');
                     dom.locationStatus.classList.add('error');
                     dom.locationMessage.textContent = `Location Error: ${errorMessage}`;
-                    dom.attendanceSection.classList.add('hidden');
-                    dom.submitAttendanceBtn.disabled = true;
+                    // dom.attendanceSection.classList.add('hidden'); // REMOVED: Attendance section always visible
+                    dom.submitAttendanceBtn.disabled = true; // Ensure submit is disabled on error
                 }
             } else {
                 dom.locationStatus.classList.remove('verified');
                 dom.locationStatus.classList.add('error');
                 dom.locationMessage.textContent = 'Geolocation is not supported by your browser.';
-                dom.attendanceSection.classList.add('hidden');
-                dom.submitAttendanceBtn.disabled = true;
+                // dom.attendanceSection.classList.add('hidden'); // REMOVED: Attendance section always visible
+                dom.submitAttendanceBtn.disabled = true; // Ensure submit is disabled if geolocation not supported
             }
         }
 
@@ -1011,11 +1001,14 @@
                 const afternoonSelected = dom.anEnters?.checked || dom.anLeaves?.checked || dom.anNone?.checked;
 
                 if (dom.submitAttendanceBtn) {
-                    dom.submitAttendanceBtn.disabled = !(morningChecked || afternoonSelected);
+                    // Only enable submit if location is verified AND at least one option is checked
+                    dom.submitAttendanceBtn.disabled = !(dom.locationStatus?.classList.contains('verified') && (morningChecked || afternoonSelected));
                 }
 
                 if (dom.locationStatus?.classList.contains('verified')) {
                     showMessage(dom.attendanceMessage, "It's Sunday. You can mark your attendance for Sunday work.", 'success');
+                } else {
+                    showMessage(dom.attendanceMessage, "Location not verified. Cannot submit attendance.", 'error');
                 }
                 return;
             }
@@ -1032,7 +1025,8 @@
                 if (dom.anEnters) dom.anEnters.disabled = true;
                 if (dom.anLeaves) dom.anLeaves.disabled = true;
                 if (dom.anNone) dom.anNone.disabled = true;
-                dom.submitAttendanceBtn.disabled = !morningChecked;
+                // Only enable submit if location is verified AND morning check is true
+                dom.submitAttendanceBtn.disabled = !(dom.locationStatus?.classList.contains('verified') && morningChecked);
             }
             // Afternoon attendance: 12 PM (noon) to 3 PM
             else if (currentHour >= 12 && currentHour < 15) {
@@ -1040,7 +1034,8 @@
                 if (dom.anEnters) dom.anEnters.disabled = false;
                 if (dom.anLeaves) dom.anLeaves.disabled = false;
                 if (dom.anNone) dom.anNone.disabled = false;
-                dom.submitAttendanceBtn.disabled = !afternoonStatusSelected;
+                // Only enable submit if location is verified AND afternoon status is selected
+                dom.submitAttendanceBtn.disabled = !(dom.locationStatus?.classList.contains('verified') && afternoonStatusSelected);
             }
             // After 3 PM or before 7 AM
             else {
@@ -1055,6 +1050,10 @@
             // Always disable submit if location not verified
             if (dom.locationStatus && !dom.locationStatus.classList.contains('verified')) {
                 if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
+                // Ensure to override the message if location is not verified, even on Sunday or within time
+                if (currentDay !== 0 || !(currentHour >= 7 && currentHour < 15)) { // Don't override the "closed for the day" message unless it's a valid time slot.
+                    showMessage(dom.attendanceMessage, "Location not verified. Cannot submit attendance.", 'error');
+                }
             }
         }
 
@@ -1481,7 +1480,7 @@
                             dom.authScreens.classList.add('hidden');
                             dom.appScreen.classList.remove('hidden');
                             dom.userDisplayName.textContent = `${currentUserData.name} (${currentUserData.email})`;
-                            checkUserLocationAndAttendance();
+                            checkUserLocationAndAttendance(); // Always check location when entering app screen
                             lastProcessedUID = user.uid; // Mark this UID as processed
                             isAuthListenerInitialized = true; // Mark listener as initialized
                         } else {
@@ -1543,6 +1542,7 @@
 
 
             // Attach event listeners for attendance form changes
+            // The refresh location button is always present now.
             if (dom.refreshLocationBtn) dom.refreshLocationBtn.addEventListener('click', checkUserLocationAndAttendance);
             if (dom.morningCheck) dom.morningCheck.addEventListener('change', updateFormDisablementBasedOnTime);
             if (dom.anEnters) dom.anEnters.addEventListener('change', updateFormDisablementBasedOnTime);
@@ -1551,12 +1551,11 @@
             if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.addEventListener('click', submitAttendance);
 
             // Initial call to update form disablement and set up interval
-            updateFormDisablementBasedOnTime();
+            // Call checkUserLocationAndAttendance() initially only when the app screen is visible
+            // The onAuthStateChanged listener now handles this initial call when the user logs in
             setInterval(updateFormDisablementBasedOnTime, 60000); // Check every minute
         });
     </script>
-    <!-- Google reCAPTCHA API script -->
-    <!-- The onloadCallback is implicitly called by the reCAPTCHA script once it's loaded -->
     <script src="https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit" async defer></script>
 </body>
 
