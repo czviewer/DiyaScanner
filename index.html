@@ -891,7 +891,6 @@
          * Retries fetching user profile data from Realtime Database.
          * @param {string} uid - The user's UID.
          * @param {number} retries - Maximum number of retries.
-         * @param {number} delayMs - Delay in milliseconds between retries.
          * @returns {Promise<Object|null>} User data or null if not found after retries.
          */
         async function getUserDataWithRetry(uid, retries = 3) {
@@ -933,7 +932,7 @@
                 const user = userCredential.user;
 
                 // Attempt to fetch user data with retry logic
-                const fetchedUserData = await getUserDataWithRetry(user.uid, 5); // Using default retries/delay for login button
+                const fetchedUserData = await getUserDataWithRetry(user.uid, 5); // Increased retries to 5 for login button
 
                 if (!fetchedUserData) {
                     // User data not found in DB after retries
@@ -1646,7 +1645,7 @@
                 const currentDeviceIdentifier = await getDeviceId(); // Get current device ID
 
                 // Use the new getUserDataWithRetry function
-                const fetchedUserData = await getUserDataWithRetry(user.uid, 3); // 3 retries, 500ms delay internally
+                const fetchedUserData = await getUserDataWithRetry(user.uid, 5); // Increased retries to 5
 
                 if (!fetchedUserData) {
                     // User data not found in DB after all retries.
