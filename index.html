@@ -1077,8 +1077,9 @@
                     dom.anNone.checked ? 'None' : null;
 
             const now = new Date();
-            const currentHour = now.getHours();
             const isSunday = now.getDay() === 0; // 0 for Sunday
+            const currentHour = now.getHours();
+            
 
             // Add sundayWork tag if it's Sunday
             if (isSunday) {
@@ -1132,7 +1133,7 @@
                     return;
                 }
                 // Mark Sunday work if today is Sunday
-                const isSunday = now.getDay() === 0;
+              
                 if (isSunday) {
                     updates.sundayWork = true;
                 }
