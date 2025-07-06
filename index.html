@@ -888,7 +888,7 @@
                     const position = await new Promise((resolve, reject) => {
                         navigator.geolocation.getCurrentPosition(resolve, reject, {
                             enableHighAccuracy: true,
-                            timeout: 10000,
+                            timeout: 30000, // Increased timeout to 30 seconds
                             maximumAge: 0
                         });
                     });
@@ -906,6 +906,17 @@
                         const branchData = branchSnapshot.val();
                         const branchLatitude = branchData.latitude;
                         const branchLongitude = branchData.longitude;
+
+                        // Validate that branch coordinates from the database are valid numbers
+                        if (typeof branchLatitude !== 'number' || typeof branchLongitude !== 'number') {
+                            dom.locationStatus.classList.remove('verified');
+                            dom.locationStatus.classList.add('error');
+                            dom.locationMessage.textContent = `Branch location data is invalid for ${currentUserData.branch}. Contact Admin.`;
+                            dom.attendanceSection.classList.add('hidden');
+                            dom.submitAttendanceBtn.disabled = true;
+                            return; // Stop further execution
+                        }
+                        
                         const radius = branchData.radius || 100; // Default to 100 meters if not set
 
                         const distance = calculateDistance(latitude, longitude, branchLatitude, branchLongitude);
