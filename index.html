@@ -695,8 +695,8 @@
 
         /**
          * Generates a simple UUID for device identification.
-         * In a real Capacitor app, you would use `@capacitor/device` or `@capacitor/app`
-         * to get a persistent device identifier like Android ID.
+         * This is a fallback for web environments.
+         * For a real Android app, you would use a native plugin.
          * @returns {string} A unique device identifier.
          */
         function generateUUID() {
@@ -709,25 +709,46 @@
 
         /**
          * Asynchronously gets the device ID.
-         * For web/testing, it generates a UUID.
-         * For a Capacitor app, you'd use:
+         *
+         * IMPORTANT: For a production Android app, you would replace the localStorage
+         * and UUID generation with actual Capacitor/Cordova plugin calls to get a
+         * truly persistent and unique device identifier.
+         *
+         * Example with Capacitor's Device plugin (after installing it):
          * import { Device } from '@capacitor/device';
+         * async function getDeviceId() {
+         * if (currentDeviceId) {
+         * return currentDeviceId;
+         * }
+         * try {
          * const info = await Device.getId();
-         * return info.uuid;
-         * Or:
-         * import { App } from '@capacitor/app';
-         * const info = await App.getInfo();
-         * return info.id; // Package name, not unique per device
-         * For a truly persistent device ID on Android, you might need a custom plugin
-         * or Firebase Installations API (which is more about app instance ID).
-         * For this example, we'll stick to a simple UUID for demonstration.
+         * currentDeviceId = info.uuid; // This is a UUID that changes on uninstall/reinstall
+         * // For Android ID (more persistent), you might need a custom Capacitor plugin
+         * // or consider Firebase Installations API for app instance ID.
+         * return currentDeviceId;
+         * } catch (error) {
+         * console.error("Error getting native device ID:", error);
+         * // Fallback to localStorage for web testing or if native ID fails
+         * let deviceId = localStorage.getItem('app_device_id');
+         * if (!deviceId) {
+         * deviceId = generateUUID();
+         * localStorage.setItem('app_device_id', deviceId);
+         * }
+         * currentDeviceId = deviceId;
+         * return currentDeviceId;
+         * }
+         * }
+         *
+         * For this HTML Canvas, we simulate it using localStorage for persistence across browser sessions.
+         *
+         * @returns {Promise<string>} A promise that resolves with a unique device identifier.
          */
         async function getDeviceId() {
             if (currentDeviceId) {
                 return currentDeviceId;
             }
-            // Simulate getting a device ID. In a real Capacitor app, this would be native.
-            // For web, we store it in localStorage to simulate persistence across browser sessions.
+            // This is a simulation for the web environment.
+            // In a real Capacitor/Android app, you would use native device APIs here.
             let deviceId = localStorage.getItem('app_device_id');
             if (!deviceId) {
                 deviceId = generateUUID();
