@@ -5,11 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diya-Hero Self-Attendance</title>
-    <!-- Font Awesome for icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <!-- Google Fonts - Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Global box-sizing for consistent layout */
@@ -416,14 +413,11 @@
 </head>
 
 <body>
-    <!-- Main Application Wrapper -->
     <div id="app-wrapper" class="w-full flex justify-center items-center">
 
-        <!-- Authentication Screens (Login, Phone Verify, OTP, Signup) -->
         <div id="auth-screens" class="card">
             <h1 class="text-2xl sm:text-3xl font-bold text-blue-800 text-center mb-4">Diya-Hero Self-Attendance</h1>
 
-            <!-- Login Form -->
             <div id="login-form" class="space-y-5">
                 <div class="form-group">
                     <label for="login-email" class="block text-gray-700 text-sm font-semibold mb-2">Email</label>
@@ -442,7 +436,6 @@
                 </button>
             </div>
 
-            <!-- Phone Verification Form -->
             <div id="phone-verify-form" class="space-y-5 hidden">
                 <p class="text-lg text-gray-700 text-center">Please enter the last 4 digits of your registered phone
                     number.</p>
@@ -461,7 +454,6 @@
                 </button>
             </div>
 
-            <!-- OTP Verification Form -->
             <div id="otp-form" class="space-y-5 hidden">
                 <p class="text-lg text-gray-700 text-center">An OTP has been sent to your registered phone number.</p>
                 <div class="form-group">
@@ -479,7 +471,6 @@
                 <div id="recaptcha-container" class="mt-4"></div>
             </div>
 
-            <!-- Signup Form -->
             <div id="signup-form" class="space-y-5 hidden">
                 <div class="form-group">
                     <label for="signup-name" class="block text-gray-700 text-sm font-semibold mb-2">Name</label>
@@ -513,7 +504,6 @@
             </div>
         </div>
 
-        <!-- Main App Screen -->
         <div id="app-screen" class="card app-screen-card hidden">
             <div class="app-header">
                 <h2 class="text-xl sm:text-2xl font-bold text-blue-800">Diya-Hero Self-Attendance</h2>
@@ -527,7 +517,6 @@
             <div id="location-status" class="location-status-box">
                 <p><span id="location-message">Checking location...</span></p>
             </div>
-            <!-- attendance-section is no longer hidden initially, it's always shown -->
             <div id="attendance-section" class="space-y-6">
                 <div class="form-group">
                     <label for="morning-check"
@@ -562,7 +551,6 @@
         </div>
     </div>
 
-    <!-- Modal for messages -->
     <div id="message-modal-overlay" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -653,7 +641,6 @@
             // Login Form Elements
             dom.loginForm = document.getElementById('login-form');
             dom.loginEmailInput = document.getElementById('login-email');
-            // FIX: Corrected typo here. Was 'document = document.getElementById'
             dom.loginPasswordInput = document.getElementById('login-password');
             dom.loginBtn = document.getElementById('login-btn');
             dom.showSignupBtn = document.getElementById('show-signup-btn');
@@ -751,23 +738,22 @@
 
         // Toggles between authentication forms
         function toggleAuthView(view) {
-            // Defensive checks: ensure elements exist before manipulating classList
-            if (dom.loginForm) dom.loginForm.classList.add('hidden');
-            if (dom.phoneVerifyForm) dom.phoneVerifyForm.classList.add('hidden');
-            if (dom.otpForm) dom.otpForm.classList.add('hidden');
-            if (dom.signupForm) dom.signupForm.classList.add('hidden');
+            dom.loginForm.classList.add('hidden');
+            dom.phoneVerifyForm.classList.add('hidden');
+            dom.otpForm.classList.add('hidden');
+            dom.signupForm.classList.add('hidden');
 
             hideAllMessages(); // Clear messages on view change
 
             if (view === 'login') {
-                if (dom.loginForm) dom.loginForm.classList.remove('hidden');
+                dom.loginForm.classList.remove('hidden');
             } else if (view === 'phone-verify') {
-                if (dom.phoneVerifyForm) dom.phoneVerifyForm.classList.remove('hidden');
+                dom.phoneVerifyForm.classList.remove('hidden');
             } else if (view === 'otp') {
-                if (dom.otpForm) dom.otpForm.classList.remove('hidden');
+                dom.otpForm.classList.remove('hidden');
                 renderRecaptcha(); // Render reCAPTCHA when OTP form is shown
             } else if (view === 'signup') {
-                if (dom.signupForm) dom.signupForm.classList.remove('hidden');
+                dom.signupForm.classList.remove('hidden');
             }
         }
 
@@ -812,11 +798,10 @@
             }
             dom.recaptchaContainer.innerHTML = '';
 
-            // CRITICAL FIX: Ensure 'auth' object is available and has expected properties
-            // before creating RecaptchaVerifier.
-            if (!auth || typeof auth.appVerificationDisabledForTesting === 'undefined') {
-                console.error("Firebase Auth object not fully initialized when trying to render reCAPTCHA.");
-                showModal('reCAPTCHA Error', 'Firebase authentication not ready. Please try again.');
+            // CRITICAL FIX: Ensure 'auth' object is available before creating RecaptchaVerifier
+            if (!auth) {
+                console.error("Firebase Auth object is undefined when trying to render reCAPTCHA.");
+                showModal('reCAPTCHA Error', 'Firebase authentication not initialized. Please try again.');
                 return;
             }
 
@@ -1050,7 +1035,7 @@
                 if (dom.anLeaves) dom.anLeaves.disabled = true;
                 if (dom.anNone) dom.anNone.disabled = true;
                 // Only enable submit if location is verified AND morning check is true
-                dom.submitAttendanceBtn.disabled = !(dom.locationStatus?.classList.contains('verified') && morningChecked);
+                dom.submitAttendanceBtn.disabled = !(dom.locationStatus?.classList.Contains('verified') && morningChecked);
             }
             // Afternoon attendance: 12 PM (noon) to 3 PM
             else if (currentHour >= 12 && currentHour < 15) {
@@ -1059,7 +1044,7 @@
                 if (dom.anLeaves) dom.anLeaves.disabled = false;
                 if (dom.anNone) dom.anNone.disabled = false;
                 // Only enable submit if location is verified AND afternoon status is selected
-                dom.submitAttendanceBtn.disabled = !(dom.locationStatus?.classList.contains('verified') && afternoonStatusSelected);
+                dom.submitAttendanceBtn.disabled = !(dom.locationStatus?.classList.Contains('verified') && afternoonStatusSelected);
             }
             // After 3 PM or before 7 AM
             else {
@@ -1072,7 +1057,7 @@
             }
 
             // Always disable submit if location not verified
-            if (dom.locationStatus && !dom.locationStatus.classList.contains('verified')) {
+            if (dom.locationStatus && !dom.locationStatus.classList.Contains('verified')) {
                 if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
                 // Ensure to override the message if location is not verified, even on Sunday or within time
                 if (currentDay !== 0 || !(currentHour >= 7 && currentHour < 15)) { // Don't override the "closed for the day" message unless it's a valid time slot.
@@ -1084,7 +1069,7 @@
 
         async function submitAttendance() {
             // Corrected: Check currentUserData.id
-            if (!currentUserData || !currentUserData.id || !dom.locationStatus.classList.contains('verified')) {
+            if (!currentUserData || !currentUserData.id || !dom.locationStatus.classList.Contains('verified')) {
                 showModal('Submission Error', 'Cannot submit attendance. Ensure you are logged in and location is verified.');
                 return;
             }
@@ -1287,14 +1272,6 @@
             hideMessage(dom.phoneVerifyMessage);
             dom.verifyPhoneBtn.disabled = true;
 
-            // Add a direct check for auth object readiness before any reCAPTCHA or phone sign-in logic
-            if (!auth || typeof auth.appVerificationDisabledForTesting === 'undefined') {
-                showMessage(dom.phoneVerifyMessage, 'System not ready. Please try again in a moment.', 'error');
-                console.error("Firebase Auth object not fully initialized when handlePhoneVerify was called.");
-                dom.verifyPhoneBtn.disabled = false; // Re-enable button
-                return;
-            }
-
             try {
                 if (!currentUserData || !currentUserData.phone) {
                     throw new Error("User data or phone number not available.");
@@ -1308,55 +1285,39 @@
                     return;
                 }
 
-                // Use a setTimeout to give Firebase Auth object a moment to fully initialize internally
-                // This helps in race conditions where the object exists but its properties are not yet populated.
-                setTimeout(async () => {
-                    try {
-                        if (!recaptchaVerifierInstance) {
-                            renderRecaptcha(); // Render if not already done
-                            // Give reCAPTCHA a moment to render and initialize
-                            await new Promise(resolve => setTimeout(resolve, 1000));
-                        }
+                // Ensure recaptchaVerifierInstance is ready
+                if (!recaptchaVerifierInstance) {
+                    renderRecaptcha(); // Render if not already done
+                    // Give reCAPTCHA a moment to render and initialize
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
 
-                        // Execute reCAPTCHA for phone number sign-in
-                        const phoneNumber = currentUserData.phone;
-                        confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifierInstance);
-                        phoneNumberToVerify = phoneNumber; // Store for OTP resend
+                // Execute reCAPTCHA for phone number sign-in
+                const phoneNumber = currentUserData.phone;
+                confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifierInstance);
+                phoneNumberToVerify = phoneNumber; // Store for OTP resend
 
-                        showMessage(dom.phoneVerifyMessage, 'OTP sent to your phone!', 'success');
-                        toggleAuthView('otp');
-                        startOtpCountdown();
-
-                    } catch (innerError) {
-                        console.error("Error during reCAPTCHA rendering or phone sign-in after delay:", innerError);
-                        let errorMessage = "Failed to send OTP. Please try again.";
-                        if (innerError.code === 'auth/invalid-phone-number') {
-                            errorMessage = "The provided phone number is invalid.";
-                        } else if (innerError.code === 'auth/missing-phone-number') {
-                            errorMessage = "No phone number found for your account. Contact Admin.";
-                        } else if (innerError.code === 'auth/recaptcha-not-verified') {
-                            errorMessage = "Please complete the reCAPTCHA verification.";
-                        } else if (innerError.code === 'auth/quota-exceeded') {
-                            errorMessage = "Too many OTP requests. Please try again later.";
-                        }
-                        showMessage(dom.phoneVerifyMessage, errorMessage, 'error');
-                        if (recaptchaWidgetId !== null) {
-                            grecaptcha.reset(recaptchaWidgetId); // Reset reCAPTCHA on error
-                        }
-                    } finally {
-                        dom.verifyPhoneBtn.disabled = false;
-                    }
-                }, 100); // Small delay, e.g., 100ms
+                showMessage(dom.phoneVerifyMessage, 'OTP sent to your phone!', 'success');
+                toggleAuthView('otp');
+                startOtpCountdown();
 
             } catch (error) {
-                console.error("Phone verification error (initial check):", error);
+                console.error("Phone verification error:", error);
                 let errorMessage = "Failed to send OTP.";
                 if (error.code === 'auth/invalid-phone-number') {
                     errorMessage = "The provided phone number is invalid.";
                 } else if (error.code === 'auth/missing-phone-number') {
                     errorMessage = "No phone number found for your account. Contact Admin.";
+                } else if (error.code === 'auth/recaptcha-not-verified') {
+                    errorMessage = "Please complete the reCAPTCHA verification.";
+                } else if (error.code === 'auth/quota-exceeded') {
+                    errorMessage = "SMS quota exceeded. Please try again later.";
                 }
                 showMessage(dom.phoneVerifyMessage, errorMessage, 'error');
+                if (recaptchaWidgetId !== null) {
+                    grecaptcha.reset(recaptchaWidgetId); // Reset reCAPTCHA on error
+                }
+            } finally {
                 dom.verifyPhoneBtn.disabled = false;
             }
         }
@@ -1419,14 +1380,6 @@
 
             hideMessage(dom.otpMessage);
             dom.resendOtpBtn.disabled = true;
-
-            // Add a direct check for auth object readiness before any reCAPTCHA or phone sign-in logic
-            if (!auth || typeof auth.appVerificationDisabledForTesting === 'undefined') {
-                showMessage(dom.otpMessage, 'System not ready. Please try again in a moment.', 'error');
-                console.error("Firebase Auth object not fully initialized when handleResendOtp was called.");
-                dom.resendOtpBtn.disabled = false; // Re-enable button
-                return;
-            }
 
             try {
                 // Reset reCAPTCHA before sending new OTP
@@ -1495,8 +1448,8 @@
                         if (currentUserData.role !== 'employee') {
                             showModal('Access Denied', 'You do not have employee access to this application.', async () => {
                                 await signOut(auth); // Log out non-employees
-                                if (dom.authScreens) dom.authScreens.classList.add('hidden');
-                                if (dom.appScreen) dom.appScreen.classList.add('hidden');
+                                dom.authScreens.classList.add('hidden');
+                                dom.appScreen.classList.add('hidden');
                                 toggleAuthView('login');
                             });
                             return; // Stop further processing for non-employees
@@ -1506,8 +1459,8 @@
                         if (!currentUserData.id) {
                             showModal('Employee ID Missing', 'Your employee ID is missing. Please contact Admin. Attendance will not be recorded.', async () => {
                                 await signOut(auth); // Log out if employee ID is missing
-                                if (dom.authScreens) dom.authScreens.classList.add('hidden');
-                                if (dom.appScreen) dom.appScreen.classList.add('hidden');
+                                dom.authScreens.classList.add('hidden');
+                                dom.appScreen.classList.add('hidden');
                                 toggleAuthView('login');
                             });
                             return;
@@ -1516,8 +1469,8 @@
                         if (!currentUserData.phone) {
                             showModal('Phone Not Found', 'Your registered phone number is missing or invalid. Please contact Admin.', async () => {
                                 await signOut(auth);
-                                if (dom.authScreens) dom.authScreens.classList.add('hidden');
-                                if (dom.appScreen) dom.appScreen.classList.add('hidden');
+                                dom.authScreens.classList.add('hidden');
+                                dom.appScreen.classList.add('hidden');
                                 toggleAuthView('login');
                             });
                             return;
@@ -1533,9 +1486,9 @@
                             }
 
                             // All checks passed, show app screen
-                            if (dom.authScreens) dom.authScreens.classList.add('hidden');
-                            if (dom.appScreen) dom.appScreen.classList.remove('hidden');
-                            if (dom.userDisplayName) dom.userDisplayName.textContent = `${currentUserData.name} (${currentUserData.email})`;
+                            dom.authScreens.classList.add('hidden');
+                            dom.appScreen.classList.remove('hidden');
+                            dom.userDisplayName.textContent = `${currentUserData.name} (${currentUserData.email})`;
                             checkUserLocationAndAttendance(); // Always check location when entering app screen
                             lastProcessedUID = user.uid; // Mark this UID as processed
                             isAuthListenerInitialized = true; // Mark listener as initialized
@@ -1551,8 +1504,8 @@
                         showModal('User Data Missing', 'Your user profile is incomplete. Please contact Admin.', async () => {
                             await deleteUser(user); // Clean up incomplete user
                             await signOut(auth);
-                            if (dom.authScreens) dom.authScreens.classList.add('hidden');
-                            if (dom.appScreen) dom.appScreen.classList.add('hidden');
+                            dom.authScreens.classList.remove('hidden');
+                            dom.appScreen.classList.add('hidden');
                             toggleAuthView('login');
                         });
                     }
@@ -1562,15 +1515,15 @@
                     currentUserData = null; // Clear user data
                     lastProcessedUID = null; // Reset processed UID
                     isAuthListenerInitialized = false; // Reset flag on logout
-                    if (dom.authScreens) dom.authScreens.classList.remove('hidden');
-                    if (dom.appScreen) dom.appScreen.classList.add('hidden');
+                    dom.authScreens.classList.remove('hidden');
+                    dom.appScreen.classList.add('hidden');
                     toggleAuthView('login'); // Ensure login form is shown by default
                 }
             } catch (error) {
                 console.error("Error fetching user role or during auth state check:", error);
                 await signOut(auth); // Log out on error
-                if (dom.authScreens) dom.authScreens.classList.remove('hidden');
-                if (dom.appScreen) dom.appScreen.classList.add('hidden');
+                dom.authScreens.classList.remove('hidden');
+                dom.appScreen.classList.add('hidden');
                 showModal('Error', 'Failed to retrieve user data. Please try again.');
                 toggleAuthView('login');
             } finally {
@@ -1612,8 +1565,6 @@
             setInterval(updateFormDisablementBasedOnTime, 60000); // Check every minute
         });
     </script>
-    <!-- Google reCAPTCHA API script -->
-    <!-- The onloadCallback is implicitly called by the reCAPTCHA script once it's loaded -->
     <script src="https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit" async defer></script>
 </body>
 
