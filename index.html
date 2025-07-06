@@ -590,7 +590,7 @@
     }
 </script>
     <script type="module">
- // Firebase Modular SDK v10+ imports
+// Firebase Modular SDK v10+ imports
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js';
 import {
     getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
@@ -1306,6 +1306,332 @@ async function handleLogout() {
     }
 }
 
+/**
+ * Fetches branch details from Firebase.
+ * @param {string} branchName - The name of the branch.
+ * @returns {Promise<Object>} A promise that resolves with branch data or null.
+ */
+async function getBranchDetails(branchName) {
+    try {
+        const branchRef = ref(db, `branches/${branchName}`);
+        const snapshot = await get(branchRef);
+        return snapshot.val();
+    } catch (error) {
+        console.error('Error fetching branch details:', error);
+        return null;
+    }
+}
+
+/**
+ * Gets the user's current GPS location.
+ * @returns {Promise<Object>} A promise that resolves with {latitude, longitude} or rejects with an error.
+ */
+function getUserLocation() {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error('Geolocation is not supported by your browser.'));
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                resolve({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude
+                });
+            },
+            (error) => {
+                let errorMessage = 'Unknown geolocation error.';
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMessage = 'Location access denied. Please enable location services for this site.';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMessage = 'Location information is unavailable.';
+                        break;
+                    case error.TIMEOUT:
+                        errorMessage = 'The request to get user location timed out.';
+                        break;
+                    case error.UNKNOWN_ERROR:
+                        errorMessage = 'An unknown geolocation error occurred.';
+                        break;
+                }
+                reject(new Error(errorMessage));
+            }, {
+            enableHighAccuracy: true,
+            timeout: 60000,
+            maximumAge: 0
+        }
+        );
+    });
+}
+
+/**
+ * Checks user's location against branch location and updates UI.
+ */
+async function checkUserLocationAndAttendance() {
+    if (dom.locationMessageSpan) dom.locationMessageSpan.textContent = 'Checking location...';
+    if (dom.locationStatusDiv) dom.locationStatusDiv.className = 'location-status-box';
+    if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
+    if (dom.attendanceSection) dom.attendanceSection.classList.add('hidden');
+
+    if (!currentUserData || !currentUserData.id || typeof currentUserData.id !== 'string' || currentUserData.id.trim() === "") {
+        showModal('Employee ID Missing', 'Your employee ID is missing or invalid. Please contact Admin. Attendance cannot be marked.', () => {
+            if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
+            if (dom.attendanceSection) dom.attendanceSection.classList.add('hidden');
+        });
+        if (dom.locationMessageSpan) dom.locationMessageSpan.textContent = '❌ Location Error: Employee ID missing.';
+        if (dom.locationStatusDiv) dom.locationStatusDiv.classList.add('error');
+        return;
+    }
+
+    try {
+        const userLocation = await getUserLocation();
+
+        if (!currentUserData.branch || typeof currentUserData.branch !== 'string' || currentUserData.branch.trim() === "") {
+            showModal('Error', 'User branch information is missing or invalid. Please contact Admin.');
+            if (dom.locationMessageSpan) dom.locationMessageSpan.textContent = '❌ Location Error: Missing branch info.';
+            if (dom.locationStatusDiv) dom.locationStatusDiv.classList.add('error');
+            return;
+        }
+
+        const branchLocation = await getBranchDetails(currentUserData.branch);
+
+        if (!branchLocation || typeof branchLocation.lat === 'undefined' || typeof branchLocation.lng === 'undefined' || typeof branchLocation.radius === 'undefined') {
+            showModal('Configuration Error', `Branch location data for "${currentUserData.branch}" is incomplete or invalid. Please contact admin.`);
+            if (dom.locationMessageSpan) dom.locationMessageSpan.textContent = `❌ Location Error: Branch data incomplete for ${currentUserData.branch}.`;
+            if (dom.locationStatusDiv) dom.locationStatusDiv.classList.add('error');
+            return;
+        }
+
+        const distance = haversineDistance(
+            userLocation.latitude, userLocation.longitude,
+            branchLocation.lat, branchLocation.lng
+        );
+
+        if (distance <= branchLocation.radius) {
+            if (dom.locationMessageSpan) dom.locationMessageSpan.textContent = '✅ Location Verified';
+            if (dom.locationStatusDiv) dom.locationStatusDiv.classList.add('verified');
+            if (dom.attendanceSection) dom.attendanceSection.classList.remove('hidden');
+            if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = false;
+            loadTodaysAttendance();
+        } else {
+            if (dom.locationMessageSpan) dom.locationMessageSpan.textContent = '❌ Location Error';
+            if (dom.locationStatusDiv) dom.locationStatusDiv.classList.add('error');
+            showModal('Location Error', `You are ${distance.toFixed(2)} km away, which is outside the allowed ${branchLocation.radius} km radius for ${currentUserData.branch}. Attendance cannot be marked.`);
+            if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
+            if (dom.attendanceSection) dom.attendanceSection.classList.add('hidden');
+        }
+    } catch (error) {
+        console.error('Location check error:', error);
+        if (dom.locationMessageSpan) dom.locationMessageSpan.textContent = `❌ Location Error: ${error.message}`;
+        if (dom.locationStatusDiv) dom.locationStatusDiv.classList.add('error');
+        showModal('Location Error', `Could not get your location: ${error.message}. Please ensure location services are enabled.`);
+        if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
+        if (dom.attendanceSection) dom.attendanceSection.classList.add('hidden');
+    }
+}
+
+/**
+ * Loads today's attendance record for the current user.
+ */
+async function loadTodaysAttendance() {
+    const today = new Date().toISOString().split('T')[0];
+    const employeeID = currentUserData.id;
+    const attendancePath = `attendance/${today}/${currentUserData.branch}/${currentUserData.subdivision || 'default'}/${employeeID}`;
+    const attendanceRef = ref(db, attendancePath);
+
+    try {
+        const snapshot = await get(attendanceRef);
+        const savedData = snapshot.val();
+
+        if (savedData) {
+            attendanceRecord.morning = savedData.morning || false;
+            attendanceRecord.afternoon = savedData.afternoon || 'None';
+            attendanceRecord.late = savedData.late || false;
+            attendanceRecord.leave = savedData.leave || 0;
+            attendanceRecord.morningLocked = savedData.morningLocked || false;
+            attendanceRecord.anLocked = savedData.anLocked || false;
+
+            if (dom.morningCheck) dom.morningCheck.checked = attendanceRecord.morning;
+            if (dom.anEnters) dom.anEnters.checked = attendanceRecord.afternoon === 'Enters';
+            if (dom.anLeaves) dom.anLeaves.checked = attendanceRecord.afternoon === 'Leaves';
+            if (dom.anNone) dom.anNone.checked = attendanceRecord.afternoon === 'None';
+
+            if (dom.morningCheck) dom.morningCheck.disabled = attendanceRecord.morningLocked;
+            if (dom.anEnters) dom.anEnters.disabled = attendanceRecord.anLocked;
+            if (dom.anLeaves) dom.anLeaves.disabled = attendanceRecord.anLocked;
+            if (dom.anNone) dom.anNone.disabled = attendanceRecord.anLocked;
+
+            displayAttendanceMessage('Today\'s attendance loaded.', false);
+        } else {
+            if (dom.morningCheck) dom.morningCheck.checked = false;
+            if (dom.anNone) dom.anNone.checked = true;
+            if (dom.morningCheck) dom.morningCheck.disabled = false;
+            if (dom.anEnters) dom.anEnters.disabled = false;
+            if (dom.anLeaves) dom.anLeaves.disabled = false;
+            if (dom.anNone) dom.anNone.disabled = false;
+            attendanceRecord = { morning: false, afternoon: 'None', late: false, leave: 0, morningLocked: false, anLocked: false };
+            displayAttendanceMessage('No attendance record found for today. Please mark your attendance.', false);
+        }
+        updateFormDisablementBasedOnTime();
+    } catch (error) {
+        console.error('Error loading attendance:', error);
+        showModal('Error', `Failed to load attendance: ${error.message}`);
+    }
+}
+
+/**
+ * Updates the form elements' disabled state based on current time and locked status.
+ */
+function updateFormDisablementBasedOnTime() {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+
+    if (dom.morningCheck && !attendanceRecord.morningLocked) {
+        dom.morningCheck.disabled = (currentHour >= 12);
+    }
+
+    if (!attendanceRecord.anLocked) {
+        const anRadios = [dom.anEnters, dom.anLeaves, dom.anNone];
+        anRadios.forEach(radio => {
+            if (radio) radio.disabled = (currentHour < 12);
+        });
+
+        if (currentHour >= 12) {
+            if (dom.morningCheck && dom.anEnters && dom.morningCheck.checked && dom.anEnters.checked) {
+                dom.anEnters.disabled = true;
+            }
+            if (dom.morningCheck && dom.anLeaves && !dom.morningCheck.checked && dom.anLeaves.checked) {
+                dom.anLeaves.disabled = true;
+            }
+        }
+    }
+}
+
+/**
+ * Calculates the attendance status and leave value based on current form state and time.
+ * @returns {Object} An object containing statusType ('full', 'half', 'absent', 'invalid', 'pending') and leave value.
+ */
+function calculateAttendanceStatus() {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+
+    const morningChecked = dom.morningCheck ? dom.morningCheck.checked : false;
+    const afternoonStatus = document.querySelector('input[name="afternoon-status"]:checked')?.value || 'None';
+
+    let statusType = 'pending';
+    let leaveValue = 0;
+
+    const isAfter9_36AM = (currentHour > 9 || (currentHour === 9 && currentMinute >= 36));
+    const isBefore3PM = (currentHour < 15);
+    const isAfter7PM = (currentHour >= 19);
+
+    attendanceRecord.late = morningChecked && isAfter9_36AM;
+
+    if (morningChecked) {
+        if (afternoonStatus === 'Leaves') {
+            statusType = isBefore3PM ? 'half' : 'full';
+            leaveValue = isBefore3PM ? 0.5 : 0;
+        } else if (afternoonStatus === 'None') {
+            if (isAfter7PM) {
+                statusType = 'full';
+                leaveValue = 0;
+            } else {
+                statusType = 'pending';
+            }
+        } else if (afternoonStatus === 'Enters') {
+            statusType = 'invalid';
+        }
+    } else {
+        if (afternoonStatus === 'Enters') {
+            statusType = 'half';
+            leaveValue = 0.5;
+        } else if (afternoonStatus === 'Leaves') {
+            statusType = 'invalid';
+        } else if (afternoonStatus === 'None') {
+            if (isAfter7PM) {
+                statusType = 'absent';
+                leaveValue = 1;
+            } else {
+                statusType = 'pending';
+            }
+        }
+    }
+    return { statusType, leaveValue };
+}
+
+/**
+ * Handles the submission of attendance data.
+ */
+if (dom.submitAttendanceBtn) {
+    dom.submitAttendanceBtn.addEventListener('click', async () => {
+        if (!currentUserData || !currentUserData.id || typeof currentUserData.id !== 'string' || currentUserData.id.trim() === "") {
+            showModal('Submission Error', 'Your employee ID is missing or invalid. Attendance cannot be submitted. Please contact Admin.');
+            return;
+        }
+
+        const { statusType, leaveValue } = calculateAttendanceStatus();
+
+        if (statusType === 'invalid') {
+            showModal('Invalid Attendance', 'The selected attendance combination is invalid. Please review your entries.');
+            return;
+        }
+
+        showModal('Confirm Attendance', 'Are you sure you want to submit your attendance for today?', async () => {
+            const now = new Date();
+            const today = now.toISOString().split('T')[0];
+            const timestamp = now.toISOString();
+
+            const uid = auth.currentUser.uid;
+            const branch = currentUserData.branch;
+            const subdivision = currentUserData.subdivision || 'default';
+            const employeeID = currentUserData.id;
+
+            const attendanceDataToSave = {
+                name: currentUserData.name,
+                uid: uid,
+                morning: dom.morningCheck.checked,
+                afternoon: document.querySelector('input[name="afternoon-status"]:checked').value,
+                late: attendanceRecord.late,
+                leave: leaveValue,
+                timestamp: timestamp,
+                morningLocked: true,
+                anLocked: true
+            };
+
+            const attendancePath = `attendance/${today}/${branch}/${subdivision}/${employeeID}`;
+            const leaveLogPath = `leavelogs/${employeeID}/${today}`;
+
+            try {
+                await set(ref(db, attendancePath), attendanceDataToSave);
+                await set(ref(db, leaveLogPath), leaveValue);
+
+                displayAttendanceMessage('✅ Attendance & leave saved successfully!', false);
+
+                attendanceRecord = { ...attendanceDataToSave };
+                if (dom.morningCheck) dom.morningCheck.disabled = true;
+                if (dom.anEnters) dom.anEnters.disabled = true;
+                if (dom.anLeaves) dom.anLeaves.disabled = true;
+                if (dom.anNone) dom.anNone.disabled = true;
+                if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
+
+            } catch (error) {
+                console.error('Error saving attendance or leave logs:', error);
+                showModal('Save Error', `Failed to save: ${error.message}`);
+            }
+        });
+    });
+}
+
+if (dom.refreshLocationBtn) dom.refreshLocationBtn.addEventListener('click', checkUserLocationAndAttendance);
+if (dom.morningCheck) dom.morningCheck.addEventListener('change', updateFormDisablementBasedOnTime);
+if (dom.anEnters) dom.anEnters.addEventListener('change', updateFormDisablementBasedOnTime);
+if (dom.anLeaves) dom.anLeaves.addEventListener('change', updateFormDisablementBasedOnTime);
+if (dom.anNone) dom.anNone.addEventListener('change', updateFormDisablementBasedOnTime);
+
+
 // --- Main Authentication State Listener (Passive Observer) ---
 onAuthStateChanged(auth, async (user) => {
     console.log("🔥 onAuthStateChanged triggered. User:", user?.uid);
@@ -1408,6 +1734,7 @@ window.onloadCallback = function() {
     // Any reCAPTCHA rendering for explicit size can go here if needed,
     // but for invisible reCAPTCHA, it's typically handled by RecaptchaVerifier.
 };
+
     </script>
     <!-- Google reCAPTCHA API script -->
     <!-- The onloadCallback is implicitly called by the reCAPTCHA script once it's loaded -->
