@@ -997,6 +997,7 @@
                 // If all checks pass, store data globally and proceed to phone verification or app screen
                 currentUserData = fetchedUserData;
                 phoneNumberToVerify = currentUserData.phone;
+                sessionStorage.setItem('currentUserData', JSON.stringify(currentUserData)); // Store in sessionStorage
 
                 const otpVerifiedForUID = sessionStorage.getItem('otpVerifiedForUID');
 
@@ -1270,6 +1271,7 @@
                 await signOut(auth);
                 localStorage.removeItem('otpVerified'); // Keep this for backward compatibility if needed, but 'otpVerifiedForUID' is preferred
                 sessionStorage.removeItem('otpVerifiedForUID'); // Clear OTP session storage
+                sessionStorage.removeItem('currentUserData'); // Clear stored user data
                 localStorage.removeItem('app_device_id'); // Clear device ID on logout
                 currentDeviceId = null; // Reset in memory
                 // Reset these flags and data on logout
@@ -1669,38 +1671,67 @@
                 // or if this user's data has already been successfully loaded for this session, skip.
                 // The `isUserDataSet` flag helps prevent redundant calls to getUserDataWithRetry
                 // due to Firebase's internal token refresh events or multiple onAuthStateChanged triggers.
-                if (isProcessingAuthState || (isUserDataSet && currentUserData && currentUserData.uid === user.uid)) {
+                if (isProcessingAuthState || (lastProcessedUID === user.uid && isUserDataSet && currentUserData)) {
                     console.log("Skipping redundant onAuthStateChanged processing for UID:", user.uid);
+                    // If the user is already fully processed and data loaded, ensure app screen is shown
+                    if (isUserDataSet && currentUserData && currentUserData.uid === user.uid) {
+                        dom.authScreens.classList.add('hidden');
+                        dom.appScreen.classList.remove('hidden');
+                        dom.userDisplayName.textContent = `${currentUserData.name} (${currentUserData.email})`;
+                        // No need to re-check location or load attendance if already on app screen
+                        // and data is set, unless a specific refresh is requested.
+                        // checkUserLocationAndAttendance(); // Only if needed for a specific refresh logic
+                    }
                     return;
                 }
 
                 isProcessingAuthState = true; // Set flag to true to indicate processing is in progress
+                lastProcessedUID = user.uid; // Store the UID being processed
 
                 try {
-                    lastProcessedUID = user.uid; // Store the UID being processed
+                    let fetchedUserData = null;
+                    const storedUserData = sessionStorage.getItem('currentUserData');
 
-                    const currentDeviceIdentifier = await getDeviceId();
+                    if (storedUserData) {
+                        try {
+                            fetchedUserData = JSON.parse(storedUserData);
+                            if (fetchedUserData.uid !== user.uid) { // Ensure stored data matches current UID
+                                console.warn("Stored user data UID mismatch. Refetching.");
+                                fetchedUserData = null; // Invalidate if UID doesn't match
+                            } else {
+                                console.log("Using user data from sessionStorage.");
+                            }
+                        } catch (parseError) {
+                            console.error("Error parsing stored user data:", parseError);
+                            fetchedUserData = null;
+                        }
+                    }
 
-                    // Use the new getUserDataWithRetry function
-                    const fetchedUserData = await getUserDataWithRetry(user.uid, 10, 1000); // Increased retries to 10, delay to 1000ms
-
+                    // Only call getUserDataWithRetry if data is not already available from sessionStorage
                     if (!fetchedUserData) {
-                        // User data not found in DB after all retries.
-                        // This indicates a critical issue with the user's profile data.
-                        await signOut(auth); // Log out immediately
-                        showModal('User Data Missing', 'Your user profile data could not be retrieved after multiple attempts. Please contact Admin.', () => {
-                            toggleAuthView('login');
-                        });
-                        // Reset flags and data on critical failure
-                        isUserDataSet = false;
-                        currentUserData = null;
-                        lastProcessedUID = null;
-                        sessionStorage.removeItem('otpVerifiedForUID'); // Clear OTP session storage on critical failure
-                        return;
+                        fetchedUserData = await getUserDataWithRetry(user.uid, 10, 1000);
+                        if (!fetchedUserData) {
+                            // Critical: User data not found after retries. Log out.
+                            await signOut(auth);
+                            showModal('User Data Missing', 'Your user profile data could not be retrieved after multiple attempts. Please contact Admin.', () => {
+                                toggleAuthView('login');
+                            });
+                            // Reset flags and data on critical failure
+                            isUserDataSet = false;
+                            currentUserData = null;
+                            lastProcessedUID = null;
+                            sessionStorage.removeItem('otpVerifiedForUID');
+                            sessionStorage.removeItem('currentUserData');
+                            return;
+                        }
+                        // Store newly fetched data in sessionStorage
+                        sessionStorage.setItem('currentUserData', JSON.stringify(fetchedUserData));
                     }
 
                     currentUserData = fetchedUserData;
                     isUserDataSet = true; // Mark data as successfully loaded for this session
+
+                    const currentDeviceIdentifier = await getDeviceId();
 
                     // Device ID validation
                     if (currentUserData.deviceId && currentUserData.deviceId !== currentDeviceIdentifier) {
@@ -1708,10 +1739,11 @@
                         showModal('Device Mismatch', '❌ Attendance is not allowed from this device. Please contact Admin.', () => {
                             toggleAuthView('login');
                         });
-                        isUserDataSet = false; // Reset flag
-                        currentUserData = null; // Ensure data is cleared
+                        isUserDataSet = false;
+                        currentUserData = null;
                         lastProcessedUID = null;
-                        sessionStorage.removeItem('otpVerifiedForUID'); // Clear OTP session storage on mismatch
+                        sessionStorage.removeItem('otpVerifiedForUID');
+                        sessionStorage.removeItem('currentUserData');
                         return;
                     }
 
@@ -1730,7 +1762,8 @@
                         isUserDataSet = false;
                         currentUserData = null;
                         lastProcessedUID = null;
-                        sessionStorage.removeItem('otpVerifiedForUID'); // Clear OTP session storage on access denied
+                        sessionStorage.removeItem('otpVerifiedForUID');
+                        sessionStorage.removeItem('currentUserData');
                         return;
                     }
 
@@ -1742,7 +1775,8 @@
                         isUserDataSet = false;
                         currentUserData = null;
                         lastProcessedUID = null;
-                        sessionStorage.removeItem('otpVerifiedForUID'); // Clear OTP session storage on missing ID
+                        sessionStorage.removeItem('otpVerifiedForUID');
+                        sessionStorage.removeItem('currentUserData');
                         return;
                     }
 
@@ -1754,7 +1788,8 @@
                         isUserDataSet = false;
                         currentUserData = null;
                         lastProcessedUID = null;
-                        sessionStorage.removeItem('otpVerifiedForUID'); // Clear OTP session storage on missing phone
+                        sessionStorage.removeItem('otpVerifiedForUID');
+                        sessionStorage.removeItem('currentUserData');
                         return;
                     }
 
@@ -1782,7 +1817,8 @@
                     isUserDataSet = false;
                     currentUserData = null;
                     lastProcessedUID = null;
-                    sessionStorage.removeItem('otpVerifiedForUID'); // Clear OTP session storage on error
+                    sessionStorage.removeItem('otpVerifiedForUID');
+                    sessionStorage.removeItem('currentUserData');
                     toggleAuthView('login');
                 } finally {
                     isProcessingAuthState = false; // Always reset flag
@@ -1798,6 +1834,7 @@
                 currentUserData = null;
                 lastProcessedUID = null;
                 sessionStorage.removeItem('otpVerifiedForUID'); // Clear OTP session storage
+                sessionStorage.removeItem('currentUserData'); // Clear stored user data
             }
         });
 
