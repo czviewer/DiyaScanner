@@ -802,28 +802,28 @@
                 return;
             }
 
-            // Ensure the container is empty before rendering
             if (dom.recaptchaContainer) {
                 dom.recaptchaContainer.innerHTML = '';
             }
 
-            recaptchaVerifierInstance = new RecaptchaVerifier(dom.recaptchaContainer, {
-                'size': 'invisible', // or 'normal' if you want a visible checkbox
-                'callback': (response) => {
-                    // reCAPTCHA solved, this is not needed for invisible reCAPTCHA if auto-executed
-                    console.log('reCAPTCHA solved:', response);
-                },
-                'expired-callback': () => {
-                    console.log('reCAPTCHA expired.');
-                    showModal('reCAPTCHA Expired', 'Please verify reCAPTCHA again.');
-                    // Optional: reset reCAPTCHA here if it's visible
-                    if (recaptchaWidgetId !== null) {
-                        grecaptcha.reset(recaptchaWidgetId);
+            recaptchaVerifierInstance = new RecaptchaVerifier(
+                auth, // ✅ Must come first in Modular SDK
+                dom.recaptchaContainer,
+                {
+                    'size': 'invisible',
+                    'callback': (response) => {
+                        console.log('reCAPTCHA solved:', response);
+                    },
+                    'expired-callback': () => {
+                        console.log('reCAPTCHA expired.');
+                        showModal('reCAPTCHA Expired', 'Please verify reCAPTCHA again.');
+                        if (recaptchaWidgetId !== null) {
+                            grecaptcha.reset(recaptchaWidgetId);
+                        }
                     }
                 }
-            }, auth);
+            );
 
-            // Render the reCAPTCHA and get its widget ID
             recaptchaVerifierInstance.render().then(function (widgetId) {
                 recaptchaWidgetId = widgetId;
                 console.log('reCAPTCHA widget rendered with ID:', recaptchaWidgetId);
@@ -1077,9 +1077,9 @@
                     dom.anNone.checked ? 'None' : null;
 
             const now = new Date();
-            
+
             const currentHour = now.getHours();
-            
+
 
             // Add sundayWork tag if it's Sunday
             if (isSunday) {
