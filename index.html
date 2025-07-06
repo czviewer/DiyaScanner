@@ -682,7 +682,9 @@
         let recaptchaVerifierInstance = null;
         let recaptchaWidgetId = null;
         let currentDeviceId = null; // Stores the unique device ID
-        let isUserDataSet = false; // New flag to track if user data has been successfully loaded
+        let isUserDataSet = false; // Flag to track if user data has been successfully loaded for the current session
+        let isProcessingAuthState = false; // Flag to debounce onAuthStateChanged
+        let lastProcessedUID = null; // To track the last UID that was fully processed
 
         // Attendance record to keep track of current state and locked fields
         let attendanceRecord = {
@@ -882,6 +884,7 @@
             dom.resendOtpBtn.disabled = false;
             confirmationResult = null;
             phoneNumberToVerify = '';
+            sessionStorage.removeItem('otpVerifiedForUID'); // Clear OTP session storage
             if (recaptchaWidgetId !== null) {
                 grecaptcha.reset(recaptchaWidgetId); // Reset reCAPTCHA
             }
@@ -991,10 +994,24 @@
                     return;
                 }
 
-                // If all checks pass, store data globally and proceed to phone verification
+                // If all checks pass, store data globally and proceed to phone verification or app screen
                 currentUserData = fetchedUserData;
                 phoneNumberToVerify = currentUserData.phone;
-                toggleAuthView('phone-verify');
+
+                const otpVerifiedForUID = sessionStorage.getItem('otpVerifiedForUID');
+
+                if (otpVerifiedForUID === user.uid) {
+                    // OTP already verified for this UID in this session
+                    console.log("OTP already verified for this session. Proceeding to app screen.");
+                    dom.authScreens.classList.add('hidden');
+                    dom.appScreen.classList.remove('hidden');
+                    dom.userDisplayName.textContent = `${currentUserData.name} (${currentUserData.email})`;
+                    checkUserLocationAndAttendance();
+                    isUserDataSet = true; // Mark data as successfully loaded
+                } else {
+                    // OTP not verified for this UID in this session, proceed to phone verification
+                    toggleAuthView('phone-verify');
+                }
 
             } catch (error) {
                 console.error('Login error:', error);
@@ -1118,7 +1135,8 @@
             try {
                 await confirmationResult.confirm(otp);
                 clearInterval(otpCountdownInterval); // Stop countdown
-                localStorage.setItem('otpVerified', 'true'); // Changed to localStorage
+                sessionStorage.setItem('otpVerifiedForUID', auth.currentUser.uid); // Store UID in sessionStorage
+                isUserDataSet = true; // Mark data as successfully loaded after OTP
                 showModal('Login Successful', 'You have successfully logged in!', () => {
                     // After OTP, currentUserData should already be populated from the initial login step.
                     // Now, we can proceed to the app screen.
@@ -1250,12 +1268,14 @@
         dom.logoutBtn.addEventListener('click', async () => {
             try {
                 await signOut(auth);
-                localStorage.removeItem('otpVerified'); // Changed to localStorage
+                localStorage.removeItem('otpVerified'); // Keep this for backward compatibility if needed, but 'otpVerifiedForUID' is preferred
+                sessionStorage.removeItem('otpVerifiedForUID'); // Clear OTP session storage
                 localStorage.removeItem('app_device_id'); // Clear device ID on logout
                 currentDeviceId = null; // Reset in memory
                 // Reset these flags and data on logout
                 isUserDataSet = false;
                 currentUserData = null;
+                lastProcessedUID = null; // Reset last processed UID
                 dom.authScreens.classList.remove('hidden');
                 dom.appScreen.classList.add('hidden');
                 dom.loginEmailInput.value = '';
@@ -1645,103 +1665,139 @@
             console.log("🔥 onAuthStateChanged triggered. User:", user?.uid);
 
             if (user) {
-                // If user data is already set and validated for this user, avoid re-processing
-                if (isUserDataSet && currentUserData && currentUserData.uid === user.uid) {
-                    console.log("User data already loaded for this session. Skipping redundant fetch.");
-                    return; // Exit early if already processed
-                }
-
-                const currentDeviceIdentifier = await getDeviceId(); // Get current device ID
-
-                // Use the new getUserDataWithRetry function
-                const fetchedUserData = await getUserDataWithRetry(user.uid, 10, 1000); // Increased retries to 10, delay to 1000ms
-
-                if (!fetchedUserData) {
-                    // User data not found in DB after all retries.
-                    // This indicates a critical issue with the user's profile data.
-                    await signOut(auth); // Log out immediately
-                    showModal('User Data Missing', 'Your user profile data could not be retrieved after multiple attempts. Please contact Admin.', () => {
-                        toggleAuthView('login');
-                    });
-                    isUserDataSet = false; // Reset flag
-                    currentUserData = null; // Ensure data is cleared
-                    return; // Stop further processing
-                }
-
-                // If user data is successfully fetched, assign it to currentUserData
-                currentUserData = fetchedUserData;
-                isUserDataSet = true; // Mark data as successfully loaded
-
-                // Device ID validation: Check if stored deviceId matches current deviceId
-                if (currentUserData.deviceId && currentUserData.deviceId !== currentDeviceIdentifier) {
-                    await signOut(auth); // Log out on device mismatch
-                    showModal('Device Mismatch', '❌ Attendance is not allowed from this device. Please contact Admin.', () => {
-                        toggleAuthView('login');
-                    });
-                    isUserDataSet = false; // Reset flag
-                    currentUserData = null; // Ensure data is cleared
-                    return; // Stop further processing
-                }
-
-                // If deviceId is not set in DB, set it now (first successful login from this device)
-                if (!currentUserData.deviceId) {
-                    await update(ref(db, `users/${user.uid}`), { deviceId: currentDeviceIdentifier });
-                    console.log("Device ID stored for first login:", currentDeviceIdentifier);
-                }
-
-                // Now perform all necessary checks on the confirmed currentUserData
-                if (currentUserData.role !== 'employee') {
-                    await signOut(auth);
-                    showModal('Access Denied', 'You do not have employee access to this application.', () => {
-                        toggleAuthView('login');
-                    });
-                    isUserDataSet = false; // Reset flag
-                    currentUserData = null; // Ensure data is cleared
+                // Debounce logic: If we are already processing this user's auth state
+                // or if this user's data has already been successfully loaded for this session, skip.
+                // The `isUserDataSet` flag helps prevent redundant calls to getUserDataWithRetry
+                // due to Firebase's internal token refresh events or multiple onAuthStateChanged triggers.
+                if (isProcessingAuthState || (isUserDataSet && currentUserData && currentUserData.uid === user.uid)) {
+                    console.log("Skipping redundant onAuthStateChanged processing for UID:", user.uid);
                     return;
                 }
 
-                if (!currentUserData.id || typeof currentUserData.id !== 'string' || currentUserData.id.trim() === "") {
+                isProcessingAuthState = true; // Set flag to true to indicate processing is in progress
+
+                try {
+                    lastProcessedUID = user.uid; // Store the UID being processed
+
+                    const currentDeviceIdentifier = await getDeviceId();
+
+                    // Use the new getUserDataWithRetry function
+                    const fetchedUserData = await getUserDataWithRetry(user.uid, 10, 1000); // Increased retries to 10, delay to 1000ms
+
+                    if (!fetchedUserData) {
+                        // User data not found in DB after all retries.
+                        // This indicates a critical issue with the user's profile data.
+                        await signOut(auth); // Log out immediately
+                        showModal('User Data Missing', 'Your user profile data could not be retrieved after multiple attempts. Please contact Admin.', () => {
+                            toggleAuthView('login');
+                        });
+                        // Reset flags and data on critical failure
+                        isUserDataSet = false;
+                        currentUserData = null;
+                        lastProcessedUID = null;
+                        sessionStorage.removeItem('otpVerifiedForUID'); // Clear OTP session storage on critical failure
+                        return;
+                    }
+
+                    currentUserData = fetchedUserData;
+                    isUserDataSet = true; // Mark data as successfully loaded for this session
+
+                    // Device ID validation
+                    if (currentUserData.deviceId && currentUserData.deviceId !== currentDeviceIdentifier) {
+                        await signOut(auth);
+                        showModal('Device Mismatch', '❌ Attendance is not allowed from this device. Please contact Admin.', () => {
+                            toggleAuthView('login');
+                        });
+                        isUserDataSet = false; // Reset flag
+                        currentUserData = null; // Ensure data is cleared
+                        lastProcessedUID = null;
+                        sessionStorage.removeItem('otpVerifiedForUID'); // Clear OTP session storage on mismatch
+                        return;
+                    }
+
+                    // If deviceId is not set in DB, set it now (first successful login from this device)
+                    if (!currentUserData.deviceId) {
+                        await update(ref(db, `users/${user.uid}`), { deviceId: currentDeviceIdentifier });
+                        console.log("Device ID stored for first login:", currentDeviceIdentifier);
+                    }
+
+                    // Now perform all necessary checks on the confirmed currentUserData
+                    if (currentUserData.role !== 'employee') {
+                        await signOut(auth);
+                        showModal('Access Denied', 'You do not have employee access to this application.', () => {
+                            toggleAuthView('login');
+                        });
+                        isUserDataSet = false;
+                        currentUserData = null;
+                        lastProcessedUID = null;
+                        sessionStorage.removeItem('otpVerifiedForUID'); // Clear OTP session storage on access denied
+                        return;
+                    }
+
+                    if (!currentUserData.id || typeof currentUserData.id !== 'string' || currentUserData.id.trim() === "") {
+                        await signOut(auth);
+                        showModal('Employee ID Missing', 'Your employee ID is missing or invalid. Please contact Admin. Attendance will not be recorded.', () => {
+                            toggleAuthView('login');
+                        });
+                        isUserDataSet = false;
+                        currentUserData = null;
+                        lastProcessedUID = null;
+                        sessionStorage.removeItem('otpVerifiedForUID'); // Clear OTP session storage on missing ID
+                        return;
+                    }
+
+                    if (typeof currentUserData.phone !== 'string' || currentUserData.phone.trim() === "") {
+                        await signOut(auth);
+                        showModal('Phone Not Found', 'Your registered phone number is missing or invalid. Please contact Admin.', () => {
+                            toggleAuthView('login');
+                        });
+                        isUserDataSet = false;
+                        currentUserData = null;
+                        lastProcessedUID = null;
+                        sessionStorage.removeItem('otpVerifiedForUID'); // Clear OTP session storage on missing phone
+                        return;
+                    }
+
+                    // OTP verification check using sessionStorage
+                    const otpVerifiedForUID = sessionStorage.getItem('otpVerifiedForUID');
+
+                    if (otpVerifiedForUID === user.uid) {
+                        console.log("OTP already verified for this session. Proceeding to app screen.");
+                        dom.authScreens.classList.add('hidden');
+                        dom.appScreen.classList.remove('hidden');
+                        dom.userDisplayName.textContent = `${currentUserData.name} (${currentUserData.email})`;
+                        checkUserLocationAndAttendance();
+                    } else {
+                        // User logged in but OTP not verified for this session, redirect to OTP flow
+                        phoneNumberToVerify = currentUserData.phone;
+                        toggleAuthView('phone-verify');
+                        showModal('Verification Required', 'Please verify your phone number to access the app.');
+                    }
+
+                } catch (error) {
+                    console.error("Error during onAuthStateChanged processing:", error);
+                    // Any unhandled error during processing should lead to logout and error modal
                     await signOut(auth);
-                    showModal('Employee ID Missing', 'Your employee ID is missing or invalid. Please contact Admin. Attendance will not be recorded.', () => {
-                        toggleAuthView('login');
-                    });
-                    isUserDataSet = false; // Reset flag
-                    currentUserData = null; // Ensure data is cleared
-                    return;
+                    showModal('Authentication Error', `An error occurred during authentication: ${error.message}. Please try again.`);
+                    isUserDataSet = false;
+                    currentUserData = null;
+                    lastProcessedUID = null;
+                    sessionStorage.removeItem('otpVerifiedForUID'); // Clear OTP session storage on error
+                    toggleAuthView('login');
+                } finally {
+                    isProcessingAuthState = false; // Always reset flag
                 }
 
-                if (typeof currentUserData.phone !== 'string' || currentUserData.phone.trim() === "") {
-                    await signOut(auth);
-                    showModal('Phone Not Found', 'Your registered phone number is missing or invalid. Please contact Admin.', () => {
-                        toggleAuthView('login');
-                    });
-                    isUserDataSet = false; // Reset flag
-                    currentUserData = null; // Ensure data is cleared
-                    return;
-                }
-
-                // All checks passed. Now determine if OTP verification is needed.
-                const otpVerified = localStorage.getItem('otpVerified'); // Changed to localStorage
-
-                if (otpVerified === 'true') {
-                    // OTP already verified, proceed to app screen
-                    dom.authScreens.classList.add('hidden');
-                    dom.appScreen.classList.remove('hidden');
-                    dom.userDisplayName.textContent = `${currentUserData.name} (${currentUserData.email})`;
-                    checkUserLocationAndAttendance();
-                } else {
-                    // User logged in but OTP not verified, redirect to OTP flow
-                    phoneNumberToVerify = currentUserData.phone; // Set phone for OTP sending
-                    toggleAuthView('phone-verify'); // Go to phone verification
-                    showModal('Verification Required', 'Please verify your phone number to access the app.');
-                }
             } else {
                 // No user is signed in, show login screen
                 dom.authScreens.classList.remove('hidden');
                 dom.appScreen.classList.add('hidden');
                 toggleAuthView('login'); // Ensure login form is shown by default
-                isUserDataSet = false; // Reset flag on logout
-                currentUserData = null; // Clear current user data
+                // Reset all session-related flags and data on logout/no user
+                isUserDataSet = false;
+                currentUserData = null;
+                lastProcessedUID = null;
+                sessionStorage.removeItem('otpVerifiedForUID'); // Clear OTP session storage
             }
         });
 
