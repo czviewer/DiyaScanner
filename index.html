@@ -836,6 +836,7 @@
         async function generateDeviceId() {
             let id = localStorage.getItem('deviceId');
             if (!id) {
+                // Generate a unique ID for the device
                 id = 'device_' + Date.now() + Math.random().toString(36).substring(2, 15);
                 localStorage.setItem('deviceId', id);
             }
@@ -844,22 +845,30 @@
         }
 
         async function checkDeviceBinding(userUid) {
-            if (!currentDeviceId) await generateDeviceId();
+            // Ensure device ID is generated before checking binding
+            if (!currentDeviceId) {
+                await generateDeviceId();
+            }
 
-            const deviceRef = ref(db, `users/${userUid}/boundDevices/${currentDeviceId}`);
+            // Reference to the bound device ID in the Realtime Database
+            const deviceRef = ref(db, `users/${userUid}/boundDevice`);
             const snapshot = await get(deviceRef);
 
-            if (!snapshot.exists()) {
-                console.warn("Device not bound. Attempting to bind...");
-                await set(deviceRef, {
-                    boundAt: new Date().toISOString(),
-                    userAgent: navigator.userAgent
-                });
-                console.log("Device bound successfully.");
-                return true; // Device was just bound, consider it valid for now
+            if (snapshot.exists()) {
+                const savedDeviceId = snapshot.val();
+                // If the saved device ID does not match the current device ID, deny access
+                if (savedDeviceId !== currentDeviceId) {
+                    showModal("Access Denied", "This account is already registered to another device.", async () => {
+                        await signOut(auth); // Sign out the user immediately
+                    });
+                    return false; // Indicate that device binding failed
+                }
+            } else {
+                // If no device is bound yet, bind the current device
+                await set(deviceRef, currentDeviceId);
+                console.log("Device bound successfully for first time login.");
             }
-            console.log("Device already bound.");
-            return true;
+            return true; // Device is bound and matches, or was just bound
         }
 
         // --- Location and Attendance Logic ---
@@ -1167,7 +1176,10 @@
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
 
-                // Store additional user data in Realtime Database
+                // Ensure device ID is generated before storing it
+                await generateDeviceId();
+
+                // Store additional user data in Realtime Database, including the bound device ID
                 await set(ref(db, 'users/' + user.uid), {
                     name: name,
                     email: email,
@@ -1180,7 +1192,7 @@
                     joinedDate: new Date().toISOString().slice(0, 10),
                     uid: user.uid,
                     lastLogin: new Date().toISOString(),
-                    lastDevice: currentDeviceId // Record initial device
+                    boundDevice: currentDeviceId // Store the unique device ID on first signup
                 });
 
                 // Set initial attendance log entry (using 'id' for path)
@@ -1428,13 +1440,8 @@
                             // Check device binding (only if phone is verified)
                             const isBound = await checkDeviceBinding(user.uid);
                             if (!isBound) {
-                                showModal('Device Not Recognized', 'This device is not registered. Please contact Admin.', async () => {
-                                    await signOut(auth);
-                                    dom.authScreens.classList.remove('hidden');
-                                    dom.appScreen.classList.add('hidden');
-                                    toggleAuthView('login');
-                                });
-                                return;
+                                // If device binding fails, the showModal and signOut are handled within checkDeviceBinding
+                                return; // Stop further processing as user is being signed out
                             }
 
                             // All checks passed, show app screen
