@@ -5,11 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diya-Hero Self-Attendance</title>
-    <!-- Font Awesome for icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <!-- Google Fonts - Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Global box-sizing for consistent layout */
@@ -416,14 +413,11 @@
 </head>
 
 <body>
-    <!-- Main Application Wrapper -->
     <div id="app-wrapper" class="w-full flex justify-center items-center">
 
-        <!-- Authentication Screens (Login, Phone Verify, OTP, Signup) -->
         <div id="auth-screens" class="card">
             <h1 class="text-2xl sm:text-3xl font-bold text-blue-800 text-center mb-4">Diya-Hero Self-Attendance</h1>
 
-            <!-- Login Form -->
             <div id="login-form" class="space-y-5">
                 <div class="form-group">
                     <label for="login-email" class="block text-gray-700 text-sm font-semibold mb-2">Email</label>
@@ -442,7 +436,6 @@
                 </button>
             </div>
 
-            <!-- Phone Verification Form -->
             <div id="phone-verify-form" class="space-y-5 hidden">
                 <p class="text-lg text-gray-700 text-center">Please enter the last 4 digits of your registered phone
                     number.</p>
@@ -461,7 +454,6 @@
                 </button>
             </div>
 
-            <!-- OTP Verification Form -->
             <div id="otp-form" class="space-y-5 hidden">
                 <p class="text-lg text-gray-700 text-center">An OTP has been sent to your registered phone number.</p>
                 <div class="form-group">
@@ -479,7 +471,6 @@
                 <div id="recaptcha-container" class="mt-4"></div>
             </div>
 
-            <!-- Signup Form -->
             <div id="signup-form" class="space-y-5 hidden">
                 <div class="form-group">
                     <label for="signup-name" class="block text-gray-700 text-sm font-semibold mb-2">Name</label>
@@ -513,7 +504,6 @@
             </div>
         </div>
 
-        <!-- Main App Screen -->
         <div id="app-screen" class="card app-screen-card hidden">
             <div class="app-header">
                 <h2 class="text-xl sm:text-2xl font-bold text-blue-800">Diya-Hero Self-Attendance</h2>
@@ -524,20 +514,15 @@
                     </button>
                 </div>
             </div>
-
             <div id="location-status" class="location-status-box">
                 <p><span id="location-message">Checking location...</span></p>
             </div>
-
             <div id="attendance-section" class="space-y-6 hidden">
                 <div class="form-group">
-                    <label for="morning-check"
-                        class="flex items-center text-lg font-semibold text-gray-700 cursor-pointer">
-                        <input type="checkbox" id="morning-check">
-                        Morning Attendance
+                    <label for="morning-check" class="flex items-center text-lg font-semibold text-gray-700 cursor-pointer">
+                        <input type="checkbox" id="morning-check"> Morning Attendance
                     </label>
                 </div>
-
                 <div class="form-group">
                     <label class="block text-lg font-semibold text-gray-700 mb-3">Afternoon Status:</label>
                     <div class="radio-group">
@@ -552,7 +537,6 @@
                         </label>
                     </div>
                 </div>
-
                 <div class="attendance-buttons">
                     <button id="refresh-location-btn" class="btn btn-secondary">
                         <i class="fas fa-sync-alt"></i> Refresh Location
@@ -566,7 +550,6 @@
         </div>
     </div>
 
-    <!-- Modal for messages -->
     <div id="message-modal-overlay" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -581,1137 +564,943 @@
             </div>
         </div>
     </div>
-<script>
-    // Define the global onloadCallback function for reCAPTCHA
-    function onloadCallback() {
-        console.log('reCAPTCHA script loaded successfully.');
-        // You might want to render your reCAPTCHA here if it was not 'invisible'
-        // For 'invisible' reCAPTCHA, it's often handled by RecaptchaVerifier directly
-    }
-</script>
+    <script>
+        // Define the global onloadCallback function for reCAPTCHA
+        window.onloadCallback = function() {
+            console.log('reCAPTCHA script loaded successfully.');
+            // This function can be used to explicitly render a reCAPTCHA widget if needed,
+            // but for 'invisible' reCAPTCHA, it's often handled by RecaptchaVerifier directly.
+        };
+    </script>
     <script type="module">
-// Firebase Modular SDK v10+ imports
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js';
-import {
-    getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
-    createUserWithEmailAndPassword, deleteUser,
-    RecaptchaVerifier, signInWithPhoneNumber,
-    setPersistence, browserLocalPersistence
-} from 'https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js';
-import { getDatabase, ref, get, set, update } from 'https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js';
+        // Firebase Modular SDK v10+ imports
+        import {
+            initializeApp
+        } from 'https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js';
+        import {
+            getAuth,
+            signInWithEmailAndPassword,
+            signOut,
+            onAuthStateChanged,
+            createUserWithEmailAndPassword,
+            deleteUser,
+            RecaptchaVerifier,
+            signInWithPhoneNumber,
+            setPersistence,
+            browserLocalPersistence
+        } from 'https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js';
+        import {
+            getDatabase,
+            ref,
+            get,
+            set,
+            update,
+            onValue
+        } from 'https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js';
 
-// Firebase configuration (replace with your actual config if different)
-const firebaseConfig = {
-    apiKey: "AIzaSyBU3K7gRzqiqQt3o9thoEpd06ReLGVmm_w",
-    authDomain: "diya-hero.firebaseapp.com",
-    databaseURL: "https://diya-hero-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "diya-hero",
-    storageBucket: "diya-hero.firebasestorage.app",
-    messagingSenderId: "455829653263",
-    appId: "1:455829653263:web:5a31c65bdab2b9cee0607a",
-    measurementId: "G-DZYHPLQD3F"
-};
+        // Firebase configuration (replace with your actual config if different)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBU3K7gRzqiqQt3o9thoEpd06ReLGVmm_w",
+            authDomain: "diya-hero.firebaseapp.com",
+            databaseURL: "https://diya-hero-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "diya-hero",
+            storageBucket: "diya-hero.firebasestorage.app",
+            messagingSenderId: "455829653263",
+            appId: "1:455829653263:web:5a31c65bdab2b9cee0607a",
+            measurementId: "G-DZYHPLQD3F"
+        };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
 
-// --- Global State Variables ---
-let currentUserData = null; // Stores the fetched user profile data from Realtime DB
-let confirmationResult = null; // Used for Phone Auth OTP verification
-let phoneNumberToVerify = ''; // Stores phone number for OTP flow
-const OTP_COOLDOWN_SECONDS = 120; // 2 minutes for OTP resend
-let otpCountdownInterval = null;
-let recaptchaVerifierInstance = null;
-let recaptchaWidgetId = null;
-let currentDeviceId = null; // Stores the unique device ID for device binding
+        // --- Global State Variables ---
+        let currentUserData = null; // Stores the fetched user profile data from Realtime DB
+        let confirmationResult = null; // Used for Phone Auth OTP verification
+        let phoneNumberToVerify = ''; // Stores phone number for OTP flow
+        const OTP_COOLDOWN_SECONDS = 120; // 2 minutes for OTP resend
+        let otpCountdownInterval = null;
+        let recaptchaVerifierInstance = null;
+        let recaptchaWidgetId = null;
+        let currentDeviceId = null; // Stores the unique device ID for device binding
 
-// Flags for controlling onAuthStateChanged processing
-let isProcessingAuthState = false; // Prevents re-entry into onAuthStateChanged processing
-let lastProcessedUID = null; // Tracks the UID that was last fully processed by onAuthStateChanged
+        // Flags for controlling onAuthStateChanged processing
+        let isProcessingAuthState = false; // Prevents re-entry into onAuthStateChanged processing
+        let lastProcessedUID = null; // Tracks the UID that was last fully processed by onAuthStateChanged
+        let isAuthListenerInitialized = false; // Ensures auth state listener only processes once per session
 
-// --- DOM Elements (Placeholder for the actual HTML elements in your app) ---
-// These would be linked to your HTML elements. For a standalone JS file,
-// they are defined as null and checked before use.
-const dom = {
-    authScreens: null, appScreen: null,
-    loginForm: null, loginEmailInput: null, loginPasswordInput: null, loginBtn: null, showSignupBtn: null,
-    phoneVerifyForm: null, last4DigitsInput: null, verifyPhoneBtn: null, backToLoginBtn: null,
-    otpForm: null, otpInput: null, verifyOtpBtn: null, resendOtpBtn: null, countdownTimer: null, recaptchaContainer: null,
-    signupForm: null, signupNameInput: null, signupEmailInput: null, signupPasswordInput: null, signupEmployeeIdInput: null, signupPhoneInput: null, signupBtn: null, showLoginBtn: null,
-    logoutBtn: null, userDisplayName: null, locationStatusDiv: null, locationMessageSpan: null, attendanceSection: null,
-    morningCheck: null, anEnters: null, anLeaves: null, anNone: null, refreshLocationBtn: null, submitAttendanceBtn: null,
-    // Message elements are also part of DOM, ensure they are initialized
-    loginMessage: null, phoneVerifyMessage: null, otpMessage: null, signupMessage: null, attendanceMessage: null,
-    messageModalOverlay: null, modalTitle: null, modalMessage: null, modalCloseBtn: null, modalOkBtn: null
-};
+        // --- DOM Elements (initialized in getDomElements) ---
+        const dom = {};
 
-// Attendance record to keep track of current state and locked fields (assuming this is used elsewhere)
-let attendanceRecord = {
-    morning: false,
-    afternoon: 'None',
-    late: false,
-    leave: 0,
-    morningLocked: false,
-    anLocked: false
-};
+        function getDomElements() {
+            dom.authScreens = document.getElementById('auth-screens');
+            dom.appScreen = document.getElementById('app-screen');
 
-// Function to safely get DOM elements (to avoid errors if running standalone)
-function getDomElements() {
-    dom.authScreens = document.getElementById('auth-screens');
-    dom.appScreen = document.getElementById('app-screen');
+            // Login Form Elements
+            dom.loginForm = document.getElementById('login-form');
+            dom.loginEmailInput = document.getElementById('login-email');
+            dom.loginPasswordInput = document.getElementById('login-password');
+            dom.loginBtn = document.getElementById('login-btn');
+            dom.showSignupBtn = document.getElementById('show-signup-btn');
+            dom.loginMessage = document.getElementById('login-message');
 
-    dom.loginForm = document.getElementById('login-form');
-    dom.loginEmailInput = document.getElementById('login-email');
-    dom.loginPasswordInput = document.getElementById('login-password');
-    dom.loginBtn = document.getElementById('login-btn');
-    dom.loginMessage = document.getElementById('login-message');
-    dom.showSignupBtn = document.getElementById('show-signup-btn');
+            // Phone Verification Form Elements
+            dom.phoneVerifyForm = document.getElementById('phone-verify-form');
+            dom.last4DigitsInput = document.getElementById('last-4-digits');
+            dom.verifyPhoneBtn = document.getElementById('verify-phone-btn');
+            dom.backToLoginBtn = document.getElementById('back-to-login-btn');
+            dom.phoneVerifyMessage = document.getElementById('phone-verify-message');
 
-    dom.phoneVerifyForm = document.getElementById('phone-verify-form');
-    dom.last4DigitsInput = document.getElementById('last-4-digits');
-    dom.verifyPhoneBtn = document.getElementById('verify-phone-btn');
-    dom.phoneVerifyMessage = document.getElementById('phone-verify-message');
-    dom.backToLoginBtn = document.getElementById('back-to-login-btn');
+            // OTP Verification Form Elements
+            dom.otpForm = document.getElementById('otp-form');
+            dom.otpInput = document.getElementById('otp-input');
+            dom.verifyOtpBtn = document.getElementById('verify-otp-btn');
+            dom.resendOtpBtn = document.getElementById('resend-otp-btn');
+            dom.countdownTimer = document.getElementById('countdown-timer');
+            dom.recaptchaContainer = document.getElementById('recaptcha-container');
+            dom.otpMessage = document.getElementById('otp-message');
 
-    dom.otpForm = document.getElementById('otp-form');
-    dom.otpInput = document.getElementById('otp-input');
-    dom.verifyOtpBtn = document.getElementById('verify-otp-btn');
-    dom.otpMessage = document.getElementById('otp-message');
-    dom.resendOtpBtn = document.getElementById('resend-otp-btn');
-    dom.countdownTimer = document.getElementById('countdown-timer');
-    dom.recaptchaContainer = document.getElementById('recaptcha-container');
+            // Signup Form Elements
+            dom.signupForm = document.getElementById('signup-form');
+            dom.signupNameInput = document.getElementById('signup-name');
+            dom.signupEmailInput = document.getElementById('signup-email');
+            dom.signupPasswordInput = document.getElementById('signup-password');
+            dom.signupEmployeeIdInput = document.getElementById('signup-employee-id');
+            dom.signupPhoneInput = document.getElementById('signup-phone');
+            dom.signupBtn = document.getElementById('signup-btn');
+            dom.showLoginBtn = document.getElementById('show-login-btn');
+            dom.signupMessage = document.getElementById('signup-message');
 
-    dom.signupForm = document.getElementById('signup-form');
-    dom.signupNameInput = document.getElementById('signup-name');
-    dom.signupEmailInput = document.getElementById('signup-email');
-    dom.signupPasswordInput = document.getElementById('signup-password');
-    dom.signupEmployeeIdInput = document.getElementById('signup-employee-id');
-    dom.signupPhoneInput = document.getElementById('signup-phone');
-    dom.signupBtn = document.getElementById('signup-btn');
-    dom.signupMessage = document.getElementById('signup-message');
-    dom.showLoginBtn = document.getElementById('show-login-btn');
+            // App Screen Elements
+            dom.logoutBtn = document.getElementById('logout-btn');
+            dom.userDisplayName = document.getElementById('user-display-name');
+            dom.locationStatus = document.getElementById('location-status');
+            dom.locationMessage = document.getElementById('location-message');
+            dom.attendanceSection = document.getElementById('attendance-section');
+            dom.morningCheck = document.getElementById('morning-check');
+            dom.anEnters = document.getElementById('an-enters');
+            dom.anLeaves = document.getElementById('an-leaves');
+            dom.anNone = document.getElementById('an-none');
+            dom.refreshLocationBtn = document.getElementById('refresh-location-btn');
+            dom.submitAttendanceBtn = document.getElementById('submit-attendance-btn');
+            dom.attendanceMessage = document.getElementById('attendance-message');
 
-    dom.logoutBtn = document.getElementById('logout-btn');
-    dom.userDisplayName = document.getElementById('user-display-name');
-    dom.locationStatusDiv = document.getElementById('location-status');
-    dom.locationMessageSpan = document.getElementById('location-message');
-    dom.attendanceSection = document.getElementById('attendance-section');
-    dom.morningCheck = document.getElementById('morning-check');
-    dom.anEnters = document.getElementById('an-enters');
-    dom.anLeaves = document.getElementById('an-leaves');
-    dom.anNone = document.getElementById('an-none');
-    dom.refreshLocationBtn = document.getElementById('refresh-location-btn');
-    dom.submitAttendanceBtn = document.getElementById('submit-attendance-btn');
-    dom.attendanceMessage = document.getElementById('attendance-message');
-
-    dom.messageModalOverlay = document.getElementById('message-modal-overlay');
-    dom.modalTitle = document.getElementById('modal-title');
-    dom.modalMessage = document.getElementById('modal-message');
-    dom.modalCloseBtn = document.querySelector('#message-modal-overlay .modal-close-btn');
-    dom.modalOkBtn = document.querySelector('#message-modal-overlay .btn');
-}
-
-// --- Utility Functions ---
-
-/**
- * Generates a simple UUID for device identification.
- * @returns {string} A unique device identifier.
- */
-function generateUUID() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        var r = Math.random() * 16 | 0,
-            v = c == 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-    });
-}
-
-/**
- * Asynchronously gets the device ID.
- * Uses localStorage for persistence across browser sessions.
- * @returns {Promise<string>} A promise that resolves with a unique device identifier.
- */
-async function getDeviceId() {
-    if (currentDeviceId) {
-        return currentDeviceId;
-    }
-    let deviceId = localStorage.getItem('app_device_id');
-    if (!deviceId) {
-        deviceId = generateUUID();
-        localStorage.setItem('app_device_id', deviceId);
-    }
-    currentDeviceId = deviceId;
-    return currentDeviceId;
-}
-
-/**
- * Haversine formula to calculate distance between two lat/lng points.
- * (This function is assumed to be correctly implemented for location logic)
- */
-function haversineDistance(lat1, lon1, lat2, lon2) {
-    // Placeholder for actual implementation
-    const R = 6371; // Radius of Earth in kilometers
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distance = R * c;
-    return distance;
-}
-
-/**
- * Displays a custom modal message.
- * @param {string} title - The title of the modal.
- * @param {string} message - The message content.
- * @param {function} onOk - Optional callback for OK button.
- */
-function showModal(title, message, onOk = null) {
-    if (!dom.modalTitle || !dom.modalMessage || !dom.messageModalOverlay || !dom.modalOkBtn) {
-        console.error("Modal DOM elements not found.");
-        alert(`${title}: ${message}`); // Fallback for missing UI
-        if (onOk) onOk();
-        return;
-    }
-    dom.modalTitle.textContent = title;
-    dom.modalMessage.textContent = message;
-    dom.messageModalOverlay.classList.add('show');
-    dom.modalOkBtn.onclick = () => {
-        hideModal();
-        if (onOk) onOk();
-    };
-}
-
-/**
- * Hides the custom modal.
- */
-function hideModal() {
-    if (dom.messageModalOverlay) {
-        dom.messageModalOverlay.classList.remove('show');
-    }
-}
-
-/**
- * Displays a message on the login/signup screen.
- * @param {HTMLElement} messageElement - The element to display the message in.
- * @param {string} message - The message to display.
- * @param {boolean} isError - True if it's an error message, false for success.
- */
-function displayAuthMessage(messageElement, message, isError) {
-    if (messageElement) {
-        messageElement.textContent = message;
-        messageElement.className = `message-box ${isError ? 'error' : 'success'}`;
-        messageElement.classList.remove('hidden');
-    }
-}
-
-/**
- * Displays a message on the attendance section.
- * @param {string} message - The message to display.
- * @param {boolean} isError - True if it's an error message, false for success.
- */
-function displayAttendanceMessage(message, isError) {
-    if (dom.attendanceMessage) {
-        dom.attendanceMessage.textContent = message;
-        dom.attendanceMessage.className = `message-box ${isError ? 'error' : 'success'}`;
-        dom.attendanceMessage.classList.remove('hidden');
-        setTimeout(() => {
-            dom.attendanceMessage.classList.add('hidden');
-        }, 5000); // Hide after 5 seconds
-    }
-}
-
-/**
- * Toggles between login, phone verification, OTP, and signup forms.
- * @param {string} view - 'login', 'phone-verify', 'otp', or 'signup'.
- */
-function toggleAuthView(view) {
-    // Hide all auth forms
-    if (dom.loginForm) dom.loginForm.classList.add('hidden');
-    if (dom.phoneVerifyForm) dom.phoneVerifyForm.classList.add('hidden');
-    if (dom.otpForm) dom.otpForm.classList.add('hidden');
-    if (dom.signupForm) dom.signupForm.classList.add('hidden');
-
-    // Hide all auth messages
-    if (dom.loginMessage) dom.loginMessage.classList.add('hidden');
-    if (dom.phoneVerifyMessage) dom.phoneVerifyMessage.classList.add('hidden');
-    if (dom.otpMessage) dom.otpMessage.classList.add('hidden');
-    if (dom.signupMessage) dom.signupMessage.classList.add('hidden');
-
-    // Show the requested view
-    switch (view) {
-        case 'login':
-            if (dom.loginForm) dom.loginForm.classList.remove('hidden');
-            break;
-        case 'phone-verify':
-            if (dom.phoneVerifyForm) dom.phoneVerifyForm.classList.remove('hidden');
-            if (dom.last4DigitsInput) dom.last4DigitsInput.value = ''; // Clear previous input
-            break;
-        case 'otp':
-            if (dom.otpForm) dom.otpForm.classList.remove('hidden');
-            if (dom.otpInput) dom.otpInput.value = ''; // Clear previous input
-            break;
-        case 'signup':
-            if (dom.signupForm) dom.signupForm.classList.remove('hidden');
-            break;
-        default:
-            console.warn("Unknown auth view requested:", view);
-            break;
-    }
-}
-
-/**
- * Fetches user profile data from Realtime Database.
- * This function is designed for a single attempt fetch, as per requirements.
- * @param {string} uid - The user's UID.
- * @returns {Promise<Object|null>} User data or null if not found.
- */
-async function fetchUserDataFromDB(uid) {
-    console.log(`Attempting to fetch user data for UID: ${uid}`);
-    const userRef = ref(db, `users/${uid}`);
-    try {
-        const snapshot = await get(userRef);
-        if (snapshot.exists()) {
-            console.log(`✅ User data fetched successfully for UID: ${uid}`);
-            return snapshot.val();
-        } else {
-            console.warn(`❌ User data not found in DB for UID: ${uid}`);
-            return null;
-        }
-    } catch (error) {
-        console.error(`Error fetching user data from DB for UID: ${uid}:`, error);
-        return null;
-    }
-}
-
-/**
- * Handles the login process: email/password authentication,
- * then fetches user data from Realtime DB.
- */
-async function handleLogin() {
-    const email = dom.loginEmailInput?.value.trim();
-    const password = dom.loginPasswordInput?.value.trim();
-
-    if (!email || !password) {
-        displayAuthMessage(dom.loginMessage, 'Please enter both email and password.', true);
-        return;
-    }
-
-    try {
-        // Stage 1: Authenticate with email/password
-        await setPersistence(auth, browserLocalPersistence);
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        console.log("Email/Password login successful. UID:", user.uid);
-
-        // Stage 2: Fetch user profile from Realtime DB
-        const fetchedUserData = await fetchUserDataFromDB(user.uid);
-
-        if (!fetchedUserData) {
-            // User data not found in DB after successful auth. This is a critical error.
-            await signOut(auth); // Force logout
-            showModal('User Profile Missing', 'Your profile data could not be found in our system. Please contact Admin.', () => {
-                toggleAuthView('login');
-            });
-            return;
+            // Modal Elements
+            dom.messageModalOverlay = document.getElementById('message-modal-overlay');
+            dom.modalTitle = document.getElementById('modal-title');
+            dom.modalMessage = document.getElementById('modal-message');
+            dom.modalCloseBtn = document.querySelector('#message-modal-overlay .modal-close-btn');
+            dom.modalOkBtn = document.querySelector('#message-modal-overlay .btn-primary');
         }
 
-        // Stage 3: Validate fetched user data and device ID
-        if (fetchedUserData.role !== 'employee' || !fetchedUserData.id || typeof fetchedUserData.id !== 'string' || fetchedUserData.id.trim() === "" || typeof fetchedUserData.phone !== 'string' || fetchedUserData.phone.trim() === "") {
-            await signOut(auth);
-            showModal('Access Denied', 'Invalid user profile or missing essential data. Please contact Admin.', () => {
-                toggleAuthView('login');
-            });
-            return;
+
+        // --- Utility Functions ---
+        function showMessage(element, message, type) {
+            if (!element) return;
+            element.textContent = message;
+            element.classList.remove('hidden', 'error', 'success');
+            element.classList.add(type);
         }
 
-        const currentDeviceIdentifier = await getDeviceId();
-        if (fetchedUserData.deviceId && fetchedUserData.deviceId !== currentDeviceIdentifier) {
-            await signOut(auth);
-            showModal('Device Mismatch', '❌ Attendance is not allowed from this device. Please contact Admin.', () => {
-                toggleAuthView('login');
-            });
-            return;
+        function hideMessage(element) {
+            if (!element) return;
+            element.classList.add('hidden');
+            element.textContent = '';
         }
 
-        // If deviceId is not set in DB, set it now (first successful login from this device)
-        if (!fetchedUserData.deviceId) {
-            await update(ref(db, `users/${user.uid}`), { deviceId: currentDeviceIdentifier });
-            console.log("Device ID stored for first login:", currentDeviceIdentifier);
-            fetchedUserData.deviceId = currentDeviceIdentifier; // Update local copy
-        }
-
-        // Store current user data globally and in sessionStorage
-        currentUserData = fetchedUserData;
-        sessionStorage.setItem('currentUserData', JSON.stringify(currentUserData));
-        phoneNumberToVerify = currentUserData.phone; // Set phone for OTP flow
-
-        // Stage 4: Check OTP verification status and proceed
-        const otpVerifiedForUID = sessionStorage.getItem('otpVerifiedForUID');
-        if (otpVerifiedForUID === user.uid) {
-            console.log("OTP already verified for this session. Proceeding to app screen.");
-            showAppScreen(); // Directly show app screen
-        } else {
-            toggleAuthView('phone-verify'); // Go to phone verification
-        }
-        lastProcessedUID = user.uid; // Mark this UID as processed for this session
-
-    } catch (error) {
-        console.error('Login process error:', error);
-        displayAuthMessage(dom.loginMessage, `Login failed: ${error.message}`, true);
-    }
-}
-
-/**
- * Handles the phone number last 4 digits verification.
- */
-async function handlePhoneVerify() {
-    const last4Digits = dom.last4DigitsInput?.value.trim();
-
-    if (!last4Digits || last4Digits.length !== 4) {
-        displayAuthMessage(dom.phoneVerifyMessage, 'Please enter exactly the last 4 digits.', true);
-        return;
-    }
-
-    if (phoneNumberToVerify.slice(-4) === last4Digits) {
-        displayAuthMessage(dom.phoneVerifyMessage, '', false); // Clear message
-        toggleAuthView('otp'); // Move to OTP form
-        await sendOtp();
-    } else {
-        displayAuthMessage(dom.phoneVerifyMessage, 'Last 4 digits do not match. Please try again.', true);
-    }
-}
-
-/**
- * Sends OTP to the registered phone number.
- */
-async function sendOtp() {
-    if (!phoneNumberToVerify) {
-        displayAuthMessage(dom.otpMessage, 'Phone number not set for OTP. Please go back and try logging in again.', true);
-        showModal('Error', 'Phone number not available for OTP. Please try logging in again.');
-        return;
-    }
-
-    setResendOtpBtnState(true); // Disable resend button and start countdown
-
-    try {
-        // Initialize RecaptchaVerifier only once
-        if (!recaptchaVerifierInstance && dom.recaptchaContainer && typeof grecaptcha !== 'undefined') {
-            recaptchaVerifierInstance = new RecaptchaVerifier(auth, dom.recaptchaContainer, {
-                'size': 'invisible',
-                'callback': (response) => { /* reCAPTCHA solved, this callback is triggered. */ },
-                'expired-callback': () => {
-                    showModal('reCAPTCHA Expired', 'Please re-verify that you are not a robot by trying again.');
-                    setResendOtpBtnState(false);
-                }
-            });
-            await recaptchaVerifierInstance.render().then((widgetId) => {
-                recaptchaWidgetId = widgetId;
-            }).catch(error => {
-                console.error("Error rendering reCAPTCHA:", error);
-                showModal('reCAPTCHA Error', `Failed to render reCAPTCHA: ${error.message}. Please check your Firebase project settings.`);
-            });
-        }
-
-        confirmationResult = await signInWithPhoneNumber(auth, phoneNumberToVerify, recaptchaVerifierInstance);
-        displayAuthMessage(dom.otpMessage, 'OTP sent successfully!', false);
-    } catch (error) {
-        clearInterval(otpCountdownInterval);
-        setResendOtpBtnState(false);
-        console.error('Error sending OTP:', error);
-        displayAuthMessage(dom.otpMessage, `Error sending OTP: ${error.message}`, true);
-        if (recaptchaWidgetId !== null && typeof grecaptcha !== 'undefined') {
-            grecaptcha.reset(recaptchaWidgetId);
-        }
-        showModal('OTP Send Error', `Failed to send OTP: ${error.message}. Please try again.`);
-    }
-}
-
-/**
- * Manages the state of the resend OTP button and countdown timer.
- * @param {boolean} disable - True to disable and start countdown, false to enable.
- */
-function setResendOtpBtnState(disable) {
-    if (!dom.resendOtpBtn || !dom.countdownTimer) return;
-
-    dom.resendOtpBtn.disabled = disable;
-    if (disable) {
-        let timeLeft = OTP_COOLDOWN_SECONDS;
-        dom.countdownTimer.textContent = `(${timeLeft}s)`;
-        if (otpCountdownInterval) {
-            clearInterval(otpCountdownInterval);
-        }
-        otpCountdownInterval = setInterval(() => {
-            timeLeft--;
-            const minutes = Math.floor(timeLeft / 60);
-            const seconds = timeLeft % 60;
-            dom.countdownTimer.textContent = `(${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')})`;
-
-            if (timeLeft <= 0) {
-                clearInterval(otpCountdownInterval);
-                dom.resendOtpBtn.disabled = false;
-                dom.countdownTimer.textContent = '';
+        function showModal(title, message, onOkCallback = null) {
+            if (!dom.messageModalOverlay || !dom.modalTitle || !dom.modalMessage || !dom.modalCloseBtn || !dom.modalOkBtn) {
+                console.error("Modal DOM elements not found.");
+                return;
             }
-        }, 1000);
-    } else {
-        clearInterval(otpCountdownInterval);
-        dom.countdownTimer.textContent = '';
-    }
-}
+            dom.modalTitle.textContent = title;
+            dom.modalMessage.textContent = message;
+            dom.messageModalOverlay.classList.add('show');
 
-/**
- * Handles OTP verification.
- */
-async function handleOtpVerification() {
-    const otp = dom.otpInput?.value.trim();
-
-    if (!otp || otp.length !== 6) {
-        displayAuthMessage(dom.otpMessage, 'Please enter the 6-digit OTP.', true);
-        return;
-    }
-
-    if (!confirmationResult) {
-        displayAuthMessage(dom.otpMessage, 'No OTP has been sent. Please request a new OTP.', true);
-        return;
-    }
-
-    try {
-        await confirmationResult.confirm(otp);
-        clearInterval(otpCountdownInterval);
-
-        if (auth.currentUser) {
-            sessionStorage.setItem('otpVerifiedForUID', auth.currentUser.uid);
-            // currentUserData is already populated from handleLogin, no need to re-fetch
-            console.log("OTP verification successful. User data already loaded.");
-            showModal('Login Successful', 'You have successfully logged in!', showAppScreen);
-        } else {
-            // This case should ideally not happen after successful confirmation.
-            // If it does, it indicates a deeper issue.
-            console.error("OTP confirmed but no current user after confirmation.");
-            await signOut(auth);
-            showModal('Authentication Error', 'Failed to establish user session after OTP. Please try logging in again.', () => {
-                toggleAuthView('login');
-            });
-        }
-    } catch (error) {
-        console.error('OTP verification error:', error);
-        displayAuthMessage(dom.otpMessage, `OTP verification failed: ${error.message}`, true);
-        showModal('OTP Verification Failed', `The OTP you entered is incorrect or expired. Please try again or resend OTP.`);
-    }
-}
-
-/**
- * Displays the main application screen and initiates location/attendance checks.
- */
-function showAppScreen() {
-    if (dom.authScreens) dom.authScreens.classList.add('hidden');
-    if (dom.appScreen) dom.appScreen.classList.remove('hidden');
-    if (dom.userDisplayName && currentUserData) {
-        dom.userDisplayName.textContent = `${currentUserData.name} (${currentUserData.email})`;
-    }
-    // Assuming checkUserLocationAndAttendance and related functions are defined elsewhere
-    // and handle the UI updates for the main app screen.
-    if (typeof checkUserLocationAndAttendance === 'function') {
-        checkUserLocationAndAttendance();
-    } else {
-        console.warn("checkUserLocationAndAttendance function not found. Skipping location/attendance check.");
-        // Fallback or display a message indicating app is ready but features are missing
-        if (dom.locationMessageSpan) dom.locationMessageSpan.textContent = 'App Ready (Location check skipped)';
-        if (dom.locationStatusDiv) dom.locationStatusDiv.classList.add('verified');
-        if (dom.attendanceSection) dom.attendanceSection.classList.remove('hidden');
-        if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = false;
-    }
-}
-
-/**
- * Handles new employee signup.
- */
-async function handleSignup() {
-    const name = dom.signupNameInput?.value.trim();
-    const email = dom.signupEmailInput?.value.trim();
-    const password = dom.signupPasswordInput?.value.trim();
-    const empId = dom.signupEmployeeIdInput?.value.trim();
-    const phone = dom.signupPhoneInput?.value.trim();
-
-    if (!name || !email || !password || !empId || !phone) {
-        displayAuthMessage(dom.signupMessage, 'Please fill in all fields.', true);
-        return;
-    }
-
-    if (password.length < 6) {
-        displayAuthMessage(dom.signupMessage, 'Password should be at least 6 characters.', true);
-        return;
-    }
-
-    let user = null;
-    try {
-        // 1. Create user in Firebase Authentication
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        user = userCredential.user;
-
-        // 2. Search entire branches tree to find where empId exists
-        let foundBranch = null;
-        let foundSubdivision = null;
-
-        const branchesRef = ref(db, 'branches');
-        const branchesSnapshot = await get(branchesRef);
-        const branchesData = branchesSnapshot.val();
-
-        if (branchesData) {
-            for (const branchName in branchesData) {
-                const branch = branchesData[branchName];
-                if (branch.subdivisions) {
-                    for (const subdivisionName in branch.subdivisions) {
-                        const subdivision = branch.subdivisions[subdivisionName];
-                        // Check if employees node exists and contains the empId
-                        if (subdivision.employees && subdivision.employees[empId]) {
-                            foundBranch = branchName;
-                            foundSubdivision = subdivisionName;
-                            break;
-                        }
-                    }
-                }
-                if (foundBranch) {
-                    break;
-                }
-            }
-        }
-
-        if (foundBranch && foundSubdivision) {
-            // 3. Save user node in Realtime Database with extracted branch and subdivision
-            const userRef = ref(db, `users/${user.uid}`);
-            await set(userRef, {
-                name: name,
-                phone: phone,
-                email: email,
-                role: "employee",
-                id: empId,
-                branch: foundBranch,
-                subdivision: foundSubdivision
-            });
-
-            showModal('Signup Successful', 'Your account has been created. You can now log in.', () => {
-                toggleAuthView('login');
-                if (dom.signupNameInput) dom.signupNameInput.value = '';
-                if (dom.signupEmailInput) dom.signupEmailInput.value = '';
-                if (dom.signupPasswordInput) dom.signupPasswordInput.value = '';
-                if (dom.signupEmployeeIdInput) dom.signupEmployeeIdInput.value = '';
-                if (dom.signupPhoneInput) dom.signupPhoneInput.value = '';
-            });
-            displayAuthMessage(dom.signupMessage, 'Signup successful!', false);
-        } else {
-            // empId not found under any branch/subdivision, delete the auth user
-            if (user) {
-                await deleteUser(user).catch(deleteError => console.error("Error deleting user:", deleteError));
-            }
-            showModal('Employee ID Not Found', 'The employee ID you entered was not found. Please contact Admin.', () => {
-                displayAuthMessage(dom.signupMessage, 'Signup failed: Employee ID not found.', true);
-            });
-        }
-    } catch (error) {
-        console.error('Signup error:', error);
-        if (user && error.code !== 'auth/email-already-in-use') {
-            await deleteUser(user).catch(deleteError => console.error("Error deleting user:", deleteError));
-        }
-        displayAuthMessage(dom.signupMessage, `Signup failed: ${error.message}`, true);
-    }
-}
-
-/**
- * Handles user logout.
- */
-async function handleLogout() {
-    try {
-        await signOut(auth);
-        // Clear all session and local storage related to this user
-        sessionStorage.removeItem('otpVerifiedForUID');
-        sessionStorage.removeItem('currentUserData');
-        localStorage.removeItem('app_device_id');
-        currentDeviceId = null;
-
-        // Reset all global state variables
-        currentUserData = null;
-        isProcessingAuthState = false;
-        lastProcessedUID = null;
-        phoneNumberToVerify = '';
-        confirmationResult = null;
-        clearInterval(otpCountdownInterval); // Stop any active OTP countdown
-
-        // Reset UI elements
-        if (dom.countdownTimer) dom.countdownTimer.textContent = '';
-        if (dom.resendOtpBtn) dom.resendOtpBtn.disabled = false;
-        if (recaptchaWidgetId !== null && typeof grecaptcha !== 'undefined') {
-            grecaptcha.reset(recaptchaWidgetId);
-        }
-
-        // Show login screen and hide app screen
-        if (dom.authScreens) dom.authScreens.classList.remove('hidden');
-        if (dom.appScreen) dom.appScreen.classList.add('hidden');
-        if (dom.loginEmailInput) dom.loginEmailInput.value = '';
-        if (dom.loginPasswordInput) dom.loginPasswordInput.value = '';
-        displayAuthMessage(dom.loginMessage, '', false); // Clear any previous messages
-        if (dom.attendanceSection) dom.attendanceSection.classList.add('hidden');
-        if (dom.locationMessageSpan) dom.locationMessageSpan.textContent = 'Checking location...';
-        // Reset attendance form state
-        // Assuming attendanceRecord and related DOM elements exist and are managed elsewhere
-        // For this example, we'll reset the global attendanceRecord object
-        attendanceRecord = { morning: false, afternoon: 'None', late: false, leave: 0, morningLocked: false, anLocked: false };
-        if (dom.morningCheck) dom.morningCheck.checked = false;
-        if (dom.anNone) dom.anNone.checked = true;
-        if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
-        toggleAuthView('login');
-
-    } catch (error) {
-        console.error('Logout error:', error);
-        showModal('Logout Error', `Failed to log out: ${error.message}`);
-    }
-}
-
-/**
- * Fetches branch details from Firebase.
- * @param {string} branchName - The name of the branch.
- * @returns {Promise<Object>} A promise that resolves with branch data or null.
- */
-async function getBranchDetails(branchName) {
-    try {
-        const branchRef = ref(db, `branches/${branchName}`);
-        const snapshot = await get(branchRef);
-        return snapshot.val();
-    } catch (error) {
-        console.error('Error fetching branch details:', error);
-        return null;
-    }
-}
-
-/**
- * Gets the user's current GPS location.
- * @returns {Promise<Object>} A promise that resolves with {latitude, longitude} or rejects with an error.
- */
-function getUserLocation() {
-    return new Promise((resolve, reject) => {
-        if (!navigator.geolocation) {
-            reject(new Error('Geolocation is not supported by your browser.'));
-            return;
-        }
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                resolve({
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude
-                });
-            },
-            (error) => {
-                let errorMessage = 'Unknown geolocation error.';
-                switch (error.code) {
-                    case error.PERMISSION_DENIED:
-                        errorMessage = 'Location access denied. Please enable location services for this site.';
-                        break;
-                    case error.POSITION_UNAVAILABLE:
-                        errorMessage = 'Location information is unavailable.';
-                        break;
-                    case error.TIMEOUT:
-                        errorMessage = 'The request to get user location timed out.';
-                        break;
-                    case error.UNKNOWN_ERROR:
-                        errorMessage = 'An unknown geolocation error occurred.';
-                        break;
-                }
-                reject(new Error(errorMessage));
-            }, {
-            enableHighAccuracy: true,
-            timeout: 60000,
-            maximumAge: 0
-        }
-        );
-    });
-}
-
-/**
- * Checks user's location against branch location and updates UI.
- */
-async function checkUserLocationAndAttendance() {
-    if (dom.locationMessageSpan) dom.locationMessageSpan.textContent = 'Checking location...';
-    if (dom.locationStatusDiv) dom.locationStatusDiv.className = 'location-status-box';
-    if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
-    if (dom.attendanceSection) dom.attendanceSection.classList.add('hidden');
-
-    if (!currentUserData || !currentUserData.id || typeof currentUserData.id !== 'string' || currentUserData.id.trim() === "") {
-        showModal('Employee ID Missing', 'Your employee ID is missing or invalid. Please contact Admin. Attendance cannot be marked.', () => {
-            if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
-            if (dom.attendanceSection) dom.attendanceSection.classList.add('hidden');
-        });
-        if (dom.locationMessageSpan) dom.locationMessageSpan.textContent = '❌ Location Error: Employee ID missing.';
-        if (dom.locationStatusDiv) dom.locationStatusDiv.classList.add('error');
-        return;
-    }
-
-    try {
-        const userLocation = await getUserLocation();
-
-        if (!currentUserData.branch || typeof currentUserData.branch !== 'string' || currentUserData.branch.trim() === "") {
-            showModal('Error', 'User branch information is missing or invalid. Please contact Admin.');
-            if (dom.locationMessageSpan) dom.locationMessageSpan.textContent = '❌ Location Error: Missing branch info.';
-            if (dom.locationStatusDiv) dom.locationStatusDiv.classList.add('error');
-            return;
-        }
-
-        const branchLocation = await getBranchDetails(currentUserData.branch);
-
-        if (!branchLocation || typeof branchLocation.lat === 'undefined' || typeof branchLocation.lng === 'undefined' || typeof branchLocation.radius === 'undefined') {
-            showModal('Configuration Error', `Branch location data for "${currentUserData.branch}" is incomplete or invalid. Please contact admin.`);
-            if (dom.locationMessageSpan) dom.locationMessageSpan.textContent = `❌ Location Error: Branch data incomplete for ${currentUserData.branch}.`;
-            if (dom.locationStatusDiv) dom.locationStatusDiv.classList.add('error');
-            return;
-        }
-
-        const distance = haversineDistance(
-            userLocation.latitude, userLocation.longitude,
-            branchLocation.lat, branchLocation.lng
-        );
-
-        if (distance <= branchLocation.radius) {
-            if (dom.locationMessageSpan) dom.locationMessageSpan.textContent = '✅ Location Verified';
-            if (dom.locationStatusDiv) dom.locationStatusDiv.classList.add('verified');
-            if (dom.attendanceSection) dom.attendanceSection.classList.remove('hidden');
-            if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = false;
-            loadTodaysAttendance();
-        } else {
-            if (dom.locationMessageSpan) dom.locationMessageSpan.textContent = '❌ Location Error';
-            if (dom.locationStatusDiv) dom.locationStatusDiv.classList.add('error');
-            showModal('Location Error', `You are ${distance.toFixed(2)} km away, which is outside the allowed ${branchLocation.radius} km radius for ${currentUserData.branch}. Attendance cannot be marked.`);
-            if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
-            if (dom.attendanceSection) dom.attendanceSection.classList.add('hidden');
-        }
-    } catch (error) {
-        console.error('Location check error:', error);
-        if (dom.locationMessageSpan) dom.locationMessageSpan.textContent = `❌ Location Error: ${error.message}`;
-        if (dom.locationStatusDiv) dom.locationStatusDiv.classList.add('error');
-        showModal('Location Error', `Could not get your location: ${error.message}. Please ensure location services are enabled.`);
-        if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
-        if (dom.attendanceSection) dom.attendanceSection.classList.add('hidden');
-    }
-}
-
-/**
- * Loads today's attendance record for the current user.
- */
-async function loadTodaysAttendance() {
-    const today = new Date().toISOString().split('T')[0];
-    const employeeID = currentUserData.id;
-    const attendancePath = `attendance/${today}/${currentUserData.branch}/${currentUserData.subdivision || 'default'}/${employeeID}`;
-    const attendanceRef = ref(db, attendancePath);
-
-    try {
-        const snapshot = await get(attendanceRef);
-        const savedData = snapshot.val();
-
-        if (savedData) {
-            attendanceRecord.morning = savedData.morning || false;
-            attendanceRecord.afternoon = savedData.afternoon || 'None';
-            attendanceRecord.late = savedData.late || false;
-            attendanceRecord.leave = savedData.leave || 0;
-            attendanceRecord.morningLocked = savedData.morningLocked || false;
-            attendanceRecord.anLocked = savedData.anLocked || false;
-
-            if (dom.morningCheck) dom.morningCheck.checked = attendanceRecord.morning;
-            if (dom.anEnters) dom.anEnters.checked = attendanceRecord.afternoon === 'Enters';
-            if (dom.anLeaves) dom.anLeaves.checked = attendanceRecord.afternoon === 'Leaves';
-            if (dom.anNone) dom.anNone.checked = attendanceRecord.afternoon === 'None';
-
-            if (dom.morningCheck) dom.morningCheck.disabled = attendanceRecord.morningLocked;
-            if (dom.anEnters) dom.anEnters.disabled = attendanceRecord.anLocked;
-            if (dom.anLeaves) dom.anLeaves.disabled = attendanceRecord.anLocked;
-            if (dom.anNone) dom.anNone.disabled = attendanceRecord.anLocked;
-
-            displayAttendanceMessage('Today\'s attendance loaded.', false);
-        } else {
-            if (dom.morningCheck) dom.morningCheck.checked = false;
-            if (dom.anNone) dom.anNone.checked = true;
-            if (dom.morningCheck) dom.morningCheck.disabled = false;
-            if (dom.anEnters) dom.anEnters.disabled = false;
-            if (dom.anLeaves) dom.anLeaves.disabled = false;
-            if (dom.anNone) dom.anNone.disabled = false;
-            attendanceRecord = { morning: false, afternoon: 'None', late: false, leave: 0, morningLocked: false, anLocked: false };
-            displayAttendanceMessage('No attendance record found for today. Please mark your attendance.', false);
-        }
-        updateFormDisablementBasedOnTime();
-    } catch (error) {
-        console.error('Error loading attendance:', error);
-        showModal('Error', `Failed to load attendance: ${error.message}`);
-    }
-}
-
-/**
- * Updates the form elements' disabled state based on current time and locked status.
- */
-function updateFormDisablementBasedOnTime() {
-    const now = new Date();
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
-
-    if (dom.morningCheck && !attendanceRecord.morningLocked) {
-        dom.morningCheck.disabled = (currentHour >= 12);
-    }
-
-    if (!attendanceRecord.anLocked) {
-        const anRadios = [dom.anEnters, dom.anLeaves, dom.anNone];
-        anRadios.forEach(radio => {
-            if (radio) radio.disabled = (currentHour < 12);
-        });
-
-        if (currentHour >= 12) {
-            if (dom.morningCheck && dom.anEnters && dom.morningCheck.checked && dom.anEnters.checked) {
-                dom.anEnters.disabled = true;
-            }
-            if (dom.morningCheck && dom.anLeaves && !dom.morningCheck.checked && dom.anLeaves.checked) {
-                dom.anLeaves.disabled = true;
-            }
-        }
-    }
-}
-
-/**
- * Calculates the attendance status and leave value based on current form state and time.
- * @returns {Object} An object containing statusType ('full', 'half', 'absent', 'invalid', 'pending') and leave value.
- */
-function calculateAttendanceStatus() {
-    const now = new Date();
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
-
-    const morningChecked = dom.morningCheck ? dom.morningCheck.checked : false;
-    const afternoonStatus = document.querySelector('input[name="afternoon-status"]:checked')?.value || 'None';
-
-    let statusType = 'pending';
-    let leaveValue = 0;
-
-    const isAfter9_36AM = (currentHour > 9 || (currentHour === 9 && currentMinute >= 36));
-    const isBefore3PM = (currentHour < 15);
-    const isAfter7PM = (currentHour >= 19);
-
-    attendanceRecord.late = morningChecked && isAfter9_36AM;
-
-    if (morningChecked) {
-        if (afternoonStatus === 'Leaves') {
-            statusType = isBefore3PM ? 'half' : 'full';
-            leaveValue = isBefore3PM ? 0.5 : 0;
-        } else if (afternoonStatus === 'None') {
-            if (isAfter7PM) {
-                statusType = 'full';
-                leaveValue = 0;
-            } else {
-                statusType = 'pending';
-            }
-        } else if (afternoonStatus === 'Enters') {
-            statusType = 'invalid';
-        }
-    } else {
-        if (afternoonStatus === 'Enters') {
-            statusType = 'half';
-            leaveValue = 0.5;
-        } else if (afternoonStatus === 'Leaves') {
-            statusType = 'invalid';
-        } else if (afternoonStatus === 'None') {
-            if (isAfter7PM) {
-                statusType = 'absent';
-                leaveValue = 1;
-            } else {
-                statusType = 'pending';
-            }
-        }
-    }
-    return { statusType, leaveValue };
-}
-
-/**
- * Handles the submission of attendance data.
- */
-if (dom.submitAttendanceBtn) {
-    dom.submitAttendanceBtn.addEventListener('click', async () => {
-        if (!currentUserData || !currentUserData.id || typeof currentUserData.id !== 'string' || currentUserData.id.trim() === "") {
-            showModal('Submission Error', 'Your employee ID is missing or invalid. Attendance cannot be submitted. Please contact Admin.');
-            return;
-        }
-
-        const { statusType, leaveValue } = calculateAttendanceStatus();
-
-        if (statusType === 'invalid') {
-            showModal('Invalid Attendance', 'The selected attendance combination is invalid. Please review your entries.');
-            return;
-        }
-
-        showModal('Confirm Attendance', 'Are you sure you want to submit your attendance for today?', async () => {
-            const now = new Date();
-            const today = now.toISOString().split('T')[0];
-            const timestamp = now.toISOString();
-
-            const uid = auth.currentUser.uid;
-            const branch = currentUserData.branch;
-            const subdivision = currentUserData.subdivision || 'default';
-            const employeeID = currentUserData.id;
-
-            const attendanceDataToSave = {
-                name: currentUserData.name,
-                uid: uid,
-                morning: dom.morningCheck.checked,
-                afternoon: document.querySelector('input[name="afternoon-status"]:checked').value,
-                late: attendanceRecord.late,
-                leave: leaveValue,
-                timestamp: timestamp,
-                morningLocked: true,
-                anLocked: true
+            const closeModal = () => {
+                dom.messageModalOverlay.classList.remove('show');
+                dom.modalCloseBtn.removeEventListener('click', closeModal);
+                dom.modalOkBtn.removeEventListener('click', closeModalAndExecute);
             };
 
-            const attendancePath = `attendance/${today}/${branch}/${subdivision}/${employeeID}`;
-            const leaveLogPath = `leavelogs/${employeeID}/${today}`;
+            const closeModalAndExecute = () => {
+                closeModal();
+                if (onOkCallback) {
+                    onOkCallback();
+                }
+            };
 
-            try {
-                await set(ref(db, attendancePath), attendanceDataToSave);
-                await set(ref(db, leaveLogPath), leaveValue);
+            dom.modalCloseBtn.addEventListener('click', closeModal);
+            dom.modalOkBtn.addEventListener('click', closeModalAndExecute);
+        }
 
-                displayAttendanceMessage('✅ Attendance & leave saved successfully!', false);
+        // Toggles between authentication forms
+        function toggleAuthView(view) {
+            dom.loginForm.classList.add('hidden');
+            dom.phoneVerifyForm.classList.add('hidden');
+            dom.otpForm.classList.add('hidden');
+            dom.signupForm.classList.add('hidden');
 
-                attendanceRecord = { ...attendanceDataToSave };
-                if (dom.morningCheck) dom.morningCheck.disabled = true;
-                if (dom.anEnters) dom.anEnters.disabled = true;
-                if (dom.anLeaves) dom.anLeaves.disabled = true;
-                if (dom.anNone) dom.anNone.disabled = true;
-                if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
+            hideAllMessages(); // Clear messages on view change
 
-            } catch (error) {
-                console.error('Error saving attendance or leave logs:', error);
-                showModal('Save Error', `Failed to save: ${error.message}`);
+            if (view === 'login') {
+                dom.loginForm.classList.remove('hidden');
+            } else if (view === 'phone-verify') {
+                dom.phoneVerifyForm.classList.remove('hidden');
+            } else if (view === 'otp') {
+                dom.otpForm.classList.remove('hidden');
+                renderRecaptcha(); // Render reCAPTCHA when OTP form is shown
+            } else if (view === 'signup') {
+                dom.signupForm.classList.remove('hidden');
             }
-        });
-    });
-}
+        }
 
-// --- Main Authentication State Listener (Passive Observer) ---
-onAuthStateChanged(auth, async (user) => {
-    console.log("🔥 onAuthStateChanged triggered. User:", user?.uid);
+        function hideAllMessages() {
+            hideMessage(dom.loginMessage);
+            hideMessage(dom.phoneVerifyMessage);
+            hideMessage(dom.otpMessage);
+            hideMessage(dom.signupMessage);
+            hideMessage(dom.attendanceMessage);
+        }
 
-    // Debounce logic: Prevent re-processing the same user state multiple times
-    if (isProcessingAuthState) {
-        console.log("Skipping onAuthStateChanged: Already processing an auth state change.");
-        return;
-    }
-    // If the user is the same as the last processed UID, and we have currentUserData
-    // and OTP is verified, it means their session is stable and data is loaded.
-    // Just ensure UI is correct.
-    if (user && lastProcessedUID === user.uid && currentUserData && sessionStorage.getItem('otpVerifiedForUID') === user.uid) {
-        console.log("Skipping onAuthStateChanged: User already processed and OTP verified. Ensuring app screen.");
-        showAppScreen();
-        return;
-    }
+        function startOtpCountdown() {
+            let seconds = OTP_COOLDOWN_SECONDS;
+            dom.resendOtpBtn.disabled = true;
+            dom.countdownTimer.textContent = `(${seconds}s)`;
 
-    isProcessingAuthState = true; // Set flag to true to indicate processing is in progress
+            otpCountdownInterval = setInterval(() => {
+                seconds--;
+                dom.countdownTimer.textContent = `(${seconds}s)`;
+                if (seconds <= 0) {
+                    clearInterval(otpCountdownInterval);
+                    dom.resendOtpBtn.disabled = false;
+                    dom.countdownTimer.textContent = '';
+                }
+            }, 1000);
+        }
 
-    try {
-        if (user) {
-            lastProcessedUID = user.uid; // Store the UID being processed
+        // --- reCAPTCHA Functions ---
+        function renderRecaptcha() {
+            if (recaptchaVerifierInstance) {
+                // If already rendered, reset it
+                if (recaptchaWidgetId !== null) {
+                    grecaptcha.reset(recaptchaWidgetId);
+                }
+                return;
+            }
 
-            // Attempt to load user data and OTP verification status from sessionStorage
-            const storedUserDataString = sessionStorage.getItem('currentUserData');
-            const otpVerifiedForUID = sessionStorage.getItem('otpVerifiedForUID');
+            // Ensure the container is empty before rendering
+            if (dom.recaptchaContainer) {
+                dom.recaptchaContainer.innerHTML = '';
+            }
 
-            let parsedStoredUserData = null;
-            if (storedUserDataString) {
+            recaptchaVerifierInstance = new RecaptchaVerifier(dom.recaptchaContainer, {
+                'size': 'invisible', // or 'normal' if you want a visible checkbox
+                'callback': (response) => {
+                    // reCAPTCHA solved, this is not needed for invisible reCAPTCHA if auto-executed
+                    console.log('reCAPTCHA solved:', response);
+                },
+                'expired-callback': () => {
+                    console.log('reCAPTCHA expired.');
+                    showModal('reCAPTCHA Expired', 'Please verify reCAPTCHA again.');
+                    // Optional: reset reCAPTCHA here if it's visible
+                    if (recaptchaWidgetId !== null) {
+                        grecaptcha.reset(recaptchaWidgetId);
+                    }
+                }
+            }, auth);
+
+            // Render the reCAPTCHA and get its widget ID
+            recaptchaVerifierInstance.render().then(function(widgetId) {
+                recaptchaWidgetId = widgetId;
+                console.log('reCAPTCHA widget rendered with ID:', recaptchaWidgetId);
+            }).catch(error => {
+                console.error("Error rendering reCAPTCHA:", error);
+                showModal('reCAPTCHA Error', 'Failed to load reCAPTCHA. Please refresh the page.');
+            });
+        }
+
+        // --- Device Binding Logic ---
+        async function generateDeviceId() {
+            let id = localStorage.getItem('deviceId');
+            if (!id) {
+                id = 'device_' + Date.now() + Math.random().toString(36).substring(2, 15);
+                localStorage.setItem('deviceId', id);
+            }
+            currentDeviceId = id;
+            console.log("Device ID:", currentDeviceId);
+        }
+
+        async function checkDeviceBinding(userUid) {
+            if (!currentDeviceId) await generateDeviceId();
+
+            const deviceRef = ref(db, `users/${userUid}/boundDevices/${currentDeviceId}`);
+            const snapshot = await get(deviceRef);
+
+            if (!snapshot.exists()) {
+                console.warn("Device not bound. Attempting to bind...");
+                await set(deviceRef, {
+                    boundAt: new Date().toISOString(),
+                    userAgent: navigator.userAgent
+                });
+                console.log("Device bound successfully.");
+                return true; // Device was just bound, consider it valid for now
+            }
+            console.log("Device already bound.");
+            return true;
+        }
+
+        // --- Location and Attendance Logic ---
+        async function checkUserLocationAndAttendance() {
+            if (!currentUserData) {
+                showMessage(dom.locationMessage, "User data not loaded. Please log in again.", 'error');
+                return;
+            }
+
+            // Only proceed if employee ID and phone are present
+            if (!currentUserData.employeeId) {
+                showModal('Employee ID Missing', 'Your employee ID is missing. Please contact Admin. Attendance will not be recorded.');
+                dom.locationStatus.classList.add('error');
+                dom.locationMessage.textContent = 'Employee ID missing.';
+                dom.attendanceSection.classList.add('hidden');
+                return;
+            }
+            if (!currentUserData.phone) {
+                showModal('Phone Not Found', 'Your registered phone number is missing or invalid. Please contact Admin.', () => {
+                    toggleAuthView('login');
+                });
+                dom.locationStatus.classList.add('error');
+                dom.locationMessage.textContent = 'Phone number missing.';
+                dom.attendanceSection.classList.add('hidden');
+                return;
+            }
+
+            dom.locationStatus.classList.remove('verified', 'error');
+            dom.locationMessage.textContent = 'Checking location...';
+            dom.attendanceSection.classList.add('hidden');
+            dom.submitAttendanceBtn.disabled = true;
+
+            if ("geolocation" in navigator) {
                 try {
-                    parsedStoredUserData = JSON.parse(storedUserDataString);
-                } catch (parseError) {
-                    console.error("Error parsing sessionStorage user data:", parseError);
-                    parsedStoredUserData = null; // Invalidate corrupted data
+                    const position = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, {
+                            enableHighAccuracy: true,
+                            timeout: 10000,
+                            maximumAge: 0
+                        });
+                    });
+
+                    const {
+                        latitude,
+                        longitude
+                    } = position.coords;
+                    console.log(`Current Location: ${latitude}, ${longitude}`);
+
+                    const branchRef = ref(db, `branches/${currentUserData.branch}`);
+                    const branchSnapshot = await get(branchRef);
+
+                    if (branchSnapshot.exists()) {
+                        const branchData = branchSnapshot.val();
+                        const branchLatitude = branchData.latitude;
+                        const branchLongitude = branchData.longitude;
+                        const radius = branchData.radius || 100; // Default to 100 meters if not set
+
+                        const distance = calculateDistance(latitude, longitude, branchLatitude, branchLongitude);
+                        console.log(`Distance to branch (${currentUserData.branch}): ${distance.toFixed(2)} meters`);
+
+                        if (distance <= radius) {
+                            dom.locationStatus.classList.remove('error');
+                            dom.locationStatus.classList.add('verified');
+                            dom.locationMessage.textContent = `Location Verified: Within ${currentUserData.branch} branch.`;
+                            dom.attendanceSection.classList.remove('hidden');
+                            updateFormDisablementBasedOnTime(); // Enable/disable based on time
+                        } else {
+                            dom.locationStatus.classList.remove('verified');
+                            dom.locationStatus.classList.add('error');
+                            dom.locationMessage.textContent = `Location Error: You are ${distance.toFixed(2)}m away from ${currentUserData.branch} branch. Please move closer.`;
+                            dom.attendanceSection.classList.add('hidden');
+                            dom.submitAttendanceBtn.disabled = true;
+                        }
+                    } else {
+                        dom.locationStatus.classList.remove('verified');
+                        dom.locationStatus.classList.add('error');
+                        dom.locationMessage.textContent = `Branch location not found for ${currentUserData.branch}. Contact Admin.`;
+                        dom.attendanceSection.classList.add('hidden');
+                        dom.submitAttendanceBtn.disabled = true;
+                    }
+
+                } catch (error) {
+                    console.error("Geolocation error:", error);
+                    let errorMessage = "Unable to retrieve your location. ";
+                    if (error.code === error.PERMISSION_DENIED) {
+                        errorMessage += "Please allow location access in your browser settings.";
+                    } else if (error.code === error.POSITION_UNAVAILABLE) {
+                        errorMessage += "Location information is unavailable.";
+                    } else if (error.code === error.TIMEOUT) {
+                        errorMessage += "The request to get user location timed out.";
+                    }
+                    dom.locationStatus.classList.remove('verified');
+                    dom.locationStatus.classList.add('error');
+                    dom.locationMessage.textContent = `Location Error: ${errorMessage}`;
+                    dom.attendanceSection.classList.add('hidden');
+                    dom.submitAttendanceBtn.disabled = true;
+                }
+            } else {
+                dom.locationStatus.classList.remove('verified');
+                dom.locationStatus.classList.add('error');
+                dom.locationMessage.textContent = 'Geolocation is not supported by your browser.';
+                dom.attendanceSection.classList.add('hidden');
+                dom.submitAttendanceBtn.disabled = true;
+            }
+        }
+
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3; // metres
+            const φ1 = lat1 * Math.PI / 180; // φ, λ in radians
+            const φ2 = lat2 * Math.PI / 180;
+            const Δφ = (lat2 - lat1) * Math.PI / 180;
+            const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            const d = R * c; // in metres
+            return d;
+        }
+
+        async function updateFormDisablementBasedOnTime() {
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentDay = now.getDay(); // 0 for Sunday, 1 for Monday, ..., 6 for Saturday
+
+            // Attendance is only open Monday to Saturday (1-6)
+            if (currentDay === 0) { // Sunday
+                dom.morningCheck.disabled = true;
+                dom.anEnters.disabled = true;
+                dom.anLeaves.disabled = true;
+                dom.anNone.disabled = true;
+                dom.submitAttendanceBtn.disabled = true;
+                showMessage(dom.attendanceMessage, "Attendance is closed on Sundays.", 'error');
+                return;
+            } else {
+                hideMessage(dom.attendanceMessage);
+            }
+
+            let morningChecked = dom.morningCheck.checked;
+            let afternoonStatusSelected = dom.anEnters.checked || dom.anLeaves.checked || dom.anNone.checked;
+
+            // Morning attendance: 7 AM to 12 PM (noon)
+            if (currentHour >= 7 && currentHour < 12) {
+                dom.morningCheck.disabled = false;
+                dom.anEnters.disabled = true;
+                dom.anLeaves.disabled = true;
+                dom.anNone.disabled = true;
+                if (!morningChecked) {
+                    dom.submitAttendanceBtn.disabled = true; // Must check morning
+                } else {
+                    dom.submitAttendanceBtn.disabled = false;
                 }
             }
-
-            // Condition to proceed to app screen:
-            // 1. User is authenticated (Firebase `user` object exists)
-            // 2. `currentUserData` is available in sessionStorage AND matches current UID
-            // 3. OTP is marked as verified for the current UID in sessionStorage
-            if (parsedStoredUserData && parsedStoredUserData.uid === user.uid && otpVerifiedForUID === user.uid) {
-                currentUserData = parsedStoredUserData; // Restore global currentUserData
-                console.log("Using cached user data and verified OTP from sessionStorage for UID:", user.uid);
-                showAppScreen();
-            } else {
-                // If any of the conditions above are not met, it means:
-                // - It's a fresh session (sessionStorage empty)
-                // - sessionStorage data is corrupted or doesn't match current user
-                // - OTP was not verified for this user in this session
-                // In all these cases, we force the user back to the login screen
-                // to re-initiate the full login -> data fetch -> OTP flow.
-                console.log("SessionStorage data incomplete or OTP not verified. Forcing re-login to re-initiate full flow.");
-                await signOut(auth); // Ensure clean auth state
-                toggleAuthView('login');
-                // Clear all relevant session storage and global state
-                currentUserData = null;
-                sessionStorage.removeItem('otpVerifiedForUID');
-                sessionStorage.removeItem('currentUserData');
+            // Afternoon attendance: 12 PM (noon) to 3 PM
+            else if (currentHour >= 12 && currentHour < 15) {
+                dom.morningCheck.disabled = true; // Morning is closed
+                dom.anEnters.disabled = false;
+                dom.anLeaves.disabled = false;
+                dom.anNone.disabled = false;
+                if (!afternoonStatusSelected) {
+                    dom.submitAttendanceBtn.disabled = true; // Must select afternoon status
+                } else {
+                    dom.submitAttendanceBtn.disabled = false;
+                }
+            }
+            // After 3 PM: All attendance closed for the day
+            else if (currentHour >= 15 || currentHour < 7) {
+                dom.morningCheck.disabled = true;
+                dom.anEnters.disabled = true;
+                dom.anLeaves.disabled = true;
+                dom.anNone.disabled = true;
+                dom.submitAttendanceBtn.disabled = true;
+                showMessage(dom.attendanceMessage, "Attendance is closed for the day.", 'error');
             }
 
-        } else {
-            // No user is signed in (user is null), reset state and show login screen
-            console.log("No user authenticated. Resetting state and showing login screen.");
-            if (dom.authScreens) dom.authScreens.classList.remove('hidden');
-            if (dom.appScreen) dom.appScreen.classList.add('hidden');
-            toggleAuthView('login');
-
-            // Clear all session-related flags and data on logout/no user
-            currentUserData = null;
-            lastProcessedUID = null;
-            sessionStorage.removeItem('otpVerifiedForUID');
-            sessionStorage.removeItem('currentUserData');
+            // Always disable submit if location not verified
+            if (!dom.locationStatus.classList.contains('verified')) {
+                dom.submitAttendanceBtn.disabled = true;
+            }
         }
-    } catch (error) {
-        console.error("Unhandled error during onAuthStateChanged processing:", error);
-        // Fallback for any unhandled errors during auth state processing
-        await signOut(auth);
-        showModal('Authentication Error', `An unexpected error occurred: ${error.message}. Please try again.`);
-        // Ensure state is reset on unhandled error
-        currentUserData = null;
-        lastProcessedUID = null;
-        sessionStorage.removeItem('otpVerifiedForUID');
-        sessionStorage.removeItem('currentUserData');
-        toggleAuthView('login');
-    } finally {
-        isProcessingAuthState = false; // Always reset this flag
-    }
-});
 
-// Global onloadCallback for reCAPTCHA (if used in HTML)
-// This function needs to be globally accessible for the reCAPTCHA script.
-window.onloadCallback = function() {
-    console.log('reCAPTCHA script loaded successfully.');
-    // Any reCAPTCHA rendering for explicit size can go here if needed,
-    // but for invisible reCAPTCHA, it's typically handled by RecaptchaVerifier.
-};
 
-// --- Event Listener Attachments (Ensured to run after DOM is loaded) ---
-document.addEventListener('DOMContentLoaded', () => {
-    // Attach event listeners for primary actions
-    if (dom.loginBtn) dom.loginBtn.addEventListener('click', handleLogin);
-    if (dom.verifyPhoneBtn) dom.verifyPhoneBtn.addEventListener('click', handlePhoneVerify);
-    if (dom.verifyOtpBtn) dom.verifyOtpBtn.addEventListener('click', handleOtpVerification);
-    if (dom.signupBtn) dom.signupBtn.addEventListener('click', handleSignup);
-    if (dom.logoutBtn) dom.logoutBtn.addEventListener('click', handleLogout);
+        async function submitAttendance() {
+            if (!currentUserData || !currentUserData.employeeId || !dom.locationStatus.classList.contains('verified')) {
+                showModal('Submission Error', 'Cannot submit attendance. Ensure you are logged in and location is verified.');
+                return;
+            }
 
-    // Attach event listeners for attendance form changes
-    if (dom.refreshLocationBtn) dom.refreshLocationBtn.addEventListener('click', checkUserLocationAndAttendance);
-    if (dom.morningCheck) dom.morningCheck.addEventListener('change', updateFormDisablementBasedOnTime);
-    if (dom.anEnters) dom.anEnters.addEventListener('change', updateFormDisablementBasedOnTime);
-    if (dom.anLeaves) dom.anLeaves.addEventListener('change', updateFormDisablementBasedOnTime);
-    if (dom.anNone) dom.anNone.addEventListener('change', updateFormDisablementBasedOnTime);
+            const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+            const attendanceRef = ref(db, `attendance/${today}/${currentUserData.branch}/${currentUserData.subdivision}/${currentUserData.employeeId}`);
 
-    // Initial call to update form disablement and set up interval
-    updateFormDisablementBasedOnTime();
-    setInterval(updateFormDisablementBasedOnTime, 60000); // Check every minute
-});
+            const updates = {};
+            let isMorningChecked = dom.morningCheck.checked;
+            let afternoonStatus = dom.anEnters.checked ? 'Enters' :
+                dom.anLeaves.checked ? 'Leaves' :
+                dom.anNone.checked ? 'None' : null;
 
+            const now = new Date();
+            const currentHour = now.getHours();
+
+            try {
+                const snapshot = await get(attendanceRef);
+                const existingData = snapshot.val();
+
+                if (currentHour >= 7 && currentHour < 12) { // Morning slot
+                    if (isMorningChecked) {
+                        if (existingData && existingData.morning) {
+                            showModal('Already Recorded', 'Morning attendance already recorded for today.');
+                            return;
+                        }
+                        updates.morning = now.toISOString();
+                    } else {
+                        showModal('Action Required', 'Please check the morning attendance box to submit.');
+                        return;
+                    }
+                } else if (currentHour >= 12 && currentHour < 15) { // Afternoon slot
+                    if (afternoonStatus) {
+                        if (existingData && existingData.afternoon) {
+                            showModal('Already Recorded', 'Afternoon attendance already recorded for today.');
+                            return;
+                        }
+                        updates.afternoon = afternoonStatus;
+                    } else {
+                        showModal('Action Required', 'Please select an afternoon status (Enters/Leaves/None) to submit.');
+                        return;
+                    }
+                } else {
+                    showModal('Time Closed', 'Attendance can only be submitted between 7 AM - 3 PM.');
+                    return;
+                }
+
+                await update(attendanceRef, updates); // Use update to merge, or set to overwrite
+                showMessage(dom.attendanceMessage, 'Attendance submitted successfully!', 'success');
+                showModal('Success', 'Your attendance has been recorded.');
+                updateFormDisablementBasedOnTime(); // Re-evaluate form state after submission
+            } catch (error) {
+                console.error("Error submitting attendance:", error);
+                showMessage(dom.attendanceMessage, `Error submitting attendance: ${error.message}`, 'error');
+                showModal('Submission Failed', `Failed to record attendance: ${error.message}`);
+            }
+        }
+
+
+        // --- Authentication Handlers ---
+        async function handleLogin() {
+            const email = dom.loginEmailInput.value;
+            const password = dom.loginPasswordInput.value;
+
+            if (!email || !password) {
+                showMessage(dom.loginMessage, 'Please enter both email and password.', 'error');
+                return;
+            }
+
+            hideMessage(dom.loginMessage);
+            dom.loginBtn.disabled = true;
+
+            try {
+                // Set persistence to local to maintain session across browser sessions
+                await setPersistence(auth, browserLocalPersistence);
+                await signInWithEmailAndPassword(auth, email, password);
+                // The onAuthStateChanged listener will handle the UI update
+            } catch (error) {
+                console.error("Login error:", error);
+                let errorMessage = "Login failed. Please check your credentials.";
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                    errorMessage = "Invalid email or password.";
+                } else if (error.code === 'auth/too-many-requests') {
+                    errorMessage = "Too many login attempts. Please try again later.";
+                }
+                showMessage(dom.loginMessage, errorMessage, 'error');
+            } finally {
+                dom.loginBtn.disabled = false;
+            }
+        }
+
+        async function handleSignup() {
+            const name = dom.signupNameInput.value;
+            const email = dom.signupEmailInput.value;
+            const password = dom.signupPasswordInput.value;
+            const employeeId = dom.signupEmployeeIdInput.value;
+            const phone = dom.signupPhoneInput.value;
+
+            if (!name || !email || !password || !employeeId || !phone) {
+                showMessage(dom.signupMessage, 'Please fill in all fields.', 'error');
+                return;
+            }
+            if (password.length < 6) {
+                showMessage(dom.signupMessage, 'Password should be at least 6 characters.', 'error');
+                return;
+            }
+            if (!phone.startsWith('+')) {
+                showMessage(dom.signupMessage, 'Phone number must start with a country code (e.g., +91).', 'error');
+                return;
+            }
+
+            hideMessage(dom.signupMessage);
+            dom.signupBtn.disabled = true;
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // Store additional user data in Realtime Database
+                await set(ref(db, 'users/' + user.uid), {
+                    name: name,
+                    email: email,
+                    employeeId: employeeId,
+                    phone: phone, // Store the full phone number for verification
+                    role: 'employee', // Default role
+                    isVerified: false, // Mark as not phone verified initially
+                    branch: 'chennai', // Default branch - TO BE CONFIGURED BY ADMIN
+                    subdivision: 'accounts', // Default subdivision - TO BE CONFIGURED BY ADMIN
+                    joinedDate: new Date().toISOString().slice(0, 10),
+                    uid: user.uid,
+                    lastLogin: new Date().toISOString(),
+                    lastDevice: currentDeviceId // Record initial device
+                });
+
+                // Set initial attendance log entry
+                const today = new Date().toISOString().slice(0, 10);
+                const attendanceRef = ref(db, `attendance/${today}/${user.uid}`);
+                await set(attendanceRef, {
+                    morning: null,
+                    afternoon: null
+                });
+
+                showMessage(dom.signupMessage, 'Signup successful! Please proceed to login.', 'success');
+                showModal('Signup Success', 'Your account has been created. Please log in.');
+                toggleAuthView('login'); // Go back to login after successful signup
+            } catch (error) {
+                console.error("Signup error:", error);
+                let errorMessage = "Signup failed.";
+                if (error.code === 'auth/email-already-in-use') {
+                    errorMessage = "Email already registered.";
+                } else if (error.code === 'auth/weak-password') {
+                    errorMessage = "Password is too weak.";
+                }
+                showMessage(dom.signupMessage, errorMessage, 'error');
+            } finally {
+                dom.signupBtn.disabled = false;
+            }
+        }
+
+        async function handlePhoneVerify() {
+            const last4Digits = dom.last4DigitsInput.value;
+
+            if (!last4Digits || last4Digits.length !== 4) {
+                showMessage(dom.phoneVerifyMessage, 'Please enter the last 4 digits of your phone number.', 'error');
+                return;
+            }
+
+            hideMessage(dom.phoneVerifyMessage);
+            dom.verifyPhoneBtn.disabled = true;
+
+            try {
+                if (!currentUserData || !currentUserData.phone) {
+                    throw new Error("User data or phone number not available.");
+                }
+
+                // Check if the last 4 digits match
+                const registeredLast4 = currentUserData.phone.slice(-4);
+                if (last4Digits !== registeredLast4) {
+                    showMessage(dom.phoneVerifyMessage, 'Last 4 digits do not match your registered number.', 'error');
+                    dom.verifyPhoneBtn.disabled = false;
+                    return;
+                }
+
+                // Ensure recaptchaVerifierInstance is ready
+                if (!recaptchaVerifierInstance) {
+                    renderRecaptcha(); // Render if not already done
+                    // Give reCAPTCHA a moment to render and initialize
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+
+                // Execute reCAPTCHA for phone number sign-in
+                const phoneNumber = currentUserData.phone;
+                confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifierInstance);
+                phoneNumberToVerify = phoneNumber; // Store for OTP resend
+
+                showMessage(dom.phoneVerifyMessage, 'OTP sent to your phone!', 'success');
+                toggleAuthView('otp');
+                startOtpCountdown();
+
+            } catch (error) {
+                console.error("Phone verification error:", error);
+                let errorMessage = "Failed to send OTP.";
+                if (error.code === 'auth/invalid-phone-number') {
+                    errorMessage = "The provided phone number is invalid.";
+                } else if (error.code === 'auth/missing-phone-number') {
+                    errorMessage = "No phone number found for your account. Contact Admin.";
+                } else if (error.code === 'auth/recaptcha-not-verified') {
+                    errorMessage = "Please complete the reCAPTCHA verification.";
+                } else if (error.code === 'auth/quota-exceeded') {
+                    errorMessage = "SMS quota exceeded. Please try again later.";
+                }
+                showMessage(dom.phoneVerifyMessage, errorMessage, 'error');
+                if (recaptchaWidgetId !== null) {
+                    grecaptcha.reset(recaptchaWidgetId); // Reset reCAPTCHA on error
+                }
+            } finally {
+                dom.verifyPhoneBtn.disabled = false;
+            }
+        }
+
+
+        async function handleOtpVerification() {
+            const otp = dom.otpInput.value;
+
+            if (!otp || otp.length !== 6) {
+                showMessage(dom.otpMessage, 'Please enter the 6-digit OTP.', 'error');
+                return;
+            }
+
+            if (!confirmationResult) {
+                showMessage(dom.otpMessage, 'No OTP request initiated. Please go back and verify phone.', 'error');
+                return;
+            }
+
+            hideMessage(dom.otpMessage);
+            dom.verifyOtpBtn.disabled = true;
+
+            try {
+                await confirmationResult.confirm(otp);
+                // OTP verified, update user's isVerified status in DB
+                if (auth.currentUser) {
+                    await update(ref(db, 'users/' + auth.currentUser.uid), {
+                        isVerified: true
+                    });
+                    currentUserData.isVerified = true; // Update local state
+                }
+
+                showMessage(dom.otpMessage, 'Phone number verified successfully!', 'success');
+                showModal('Verification Success', 'Your phone number has been verified. Welcome!');
+                // Automatically transition to app screen after successful verification
+                dom.authScreens.classList.add('hidden');
+                dom.appScreen.classList.remove('hidden');
+                checkUserLocationAndAttendance(); // Check location after successful login/verification
+            } catch (error) {
+                console.error("OTP verification error:", error);
+                let errorMessage = "OTP verification failed. Please try again.";
+                if (error.code === 'auth/invalid-verification-code') {
+                    errorMessage = "Invalid OTP. Please check and try again.";
+                } else if (error.code === 'auth/code-expired') {
+                    errorMessage = "OTP expired. Please resend.";
+                    dom.resendOtpBtn.disabled = false;
+                }
+                showMessage(dom.otpMessage, errorMessage, 'error');
+            } finally {
+                dom.verifyOtpBtn.disabled = false;
+            }
+        }
+
+        async function handleResendOtp() {
+            if (!phoneNumberToVerify) {
+                showModal('Error', 'No phone number to resend OTP to. Please go back to phone verification.', () => {
+                    toggleAuthView('phone-verify');
+                });
+                return;
+            }
+
+            hideMessage(dom.otpMessage);
+            dom.resendOtpBtn.disabled = true;
+
+            try {
+                // Reset reCAPTCHA before sending new OTP
+                if (recaptchaWidgetId !== null) {
+                    grecaptcha.reset(recaptchaWidgetId);
+                }
+
+                // Send new OTP
+                confirmationResult = await signInWithPhoneNumber(auth, phoneNumberToVerify, recaptchaVerifierInstance);
+                showMessage(dom.otpMessage, 'New OTP sent!', 'success');
+                startOtpCountdown(); // Restart countdown
+            } catch (error) {
+                console.error("Resend OTP error:", error);
+                let errorMessage = "Failed to resend OTP.";
+                if (error.code === 'auth/too-many-requests') {
+                    errorMessage = "Too many requests. Please wait before trying to resend.";
+                } else if (error.code === 'auth/recaptcha-not-verified') {
+                    errorMessage = "Please complete the reCAPTCHA verification.";
+                }
+                showMessage(dom.otpMessage, errorMessage, 'error');
+            } finally {
+                // Button re-enabled by countdown or manually on immediate error
+            }
+        }
+
+
+        async function handleLogout() {
+            try {
+                await signOut(auth);
+                // onAuthStateChanged will handle UI changes
+            } catch (error) {
+                console.error("Logout error:", error);
+                showModal('Logout Failed', `Error logging out: ${error.message}`);
+            }
+        }
+
+
+        // --- Main Auth State Observer ---
+        onAuthStateChanged(auth, async (user) => {
+            if (isProcessingAuthState) {
+                console.log("Skipping onAuthStateChanged due to ongoing processing.");
+                return;
+            }
+
+            if (user && user.uid === lastProcessedUID && isAuthListenerInitialized) {
+                console.log("Auth state for this user already processed. Skipping.");
+                return;
+            }
+
+            isProcessingAuthState = true; // Set flag
+            hideAllMessages(); // Clear messages on auth state change
+
+            try {
+                if (user) {
+                    // User is signed in
+                    console.log("User signed in:", user.uid);
+                    await generateDeviceId(); // Ensure device ID exists
+
+                    const userRef = ref(db, `users/${user.uid}`);
+                    const snapshot = await get(userRef);
+
+                    if (snapshot.exists()) {
+                        currentUserData = snapshot.val();
+                        console.log("User data from DB:", currentUserData);
+
+                        if (currentUserData.role !== 'employee') {
+                            showModal('Access Denied', 'You do not have employee access to this application.', async () => {
+                                await signOut(auth); // Log out non-employees
+                                dom.authScreens.classList.remove('hidden');
+                                dom.appScreen.classList.add('hidden');
+                                toggleAuthView('login');
+                            });
+                            return; // Stop further processing for non-employees
+                        }
+
+                        if (!currentUserData.employeeId) {
+                            showModal('Employee ID Missing', 'Your employee ID is missing. Please contact Admin. Attendance will not be recorded.', async () => {
+                                await signOut(auth); // Log out if employee ID is missing
+                                dom.authScreens.classList.remove('hidden');
+                                dom.appScreen.classList.add('hidden');
+                                toggleAuthView('login');
+                            });
+                            return;
+                        }
+
+                        if (!currentUserData.phone) {
+                            showModal('Phone Not Found', 'Your registered phone number is missing or invalid. Please contact Admin.', async () => {
+                                await signOut(auth);
+                                dom.authScreens.classList.remove('hidden');
+                                dom.appScreen.classList.add('hidden');
+                                toggleAuthView('login');
+                            });
+                            return;
+                        }
+
+                        // Check if phone number is verified
+                        if (currentUserData.isVerified) {
+                            // Check device binding (only if phone is verified)
+                            const isBound = await checkDeviceBinding(user.uid);
+                            if (!isBound) {
+                                showModal('Device Not Recognized', 'This device is not registered. Please contact Admin.', async () => {
+                                    await signOut(auth);
+                                    dom.authScreens.classList.remove('hidden');
+                                    dom.appScreen.classList.add('hidden');
+                                    toggleAuthView('login');
+                                });
+                                return;
+                            }
+
+                            // All checks passed, show app screen
+                            dom.authScreens.classList.add('hidden');
+                            dom.appScreen.classList.remove('hidden');
+                            dom.userDisplayName.textContent = `${currentUserData.name} (${currentUserData.email})`;
+                            checkUserLocationAndAttendance();
+                            lastProcessedUID = user.uid; // Mark this UID as processed
+                            isAuthListenerInitialized = true; // Mark listener as initialized
+                        } else {
+                            // User logged in but OTP not verified, redirect to OTP flow
+                            phoneNumberToVerify = currentUserData.phone; // Set phone for OTP sending
+                            toggleAuthView('phone-verify'); // Go to phone verification
+                            showModal('Verification Required', 'Please verify your phone number to access the app.');
+                        }
+                    } else {
+                        // User exists in Auth but not in Realtime DB (should not happen with proper signup flow)
+                        console.warn("User data not found in DB for UID:", user.uid);
+                        showModal('User Data Missing', 'Your user profile is incomplete. Please contact Admin.', async () => {
+                            await deleteUser(user); // Clean up incomplete user
+                            await signOut(auth);
+                            dom.authScreens.classList.remove('hidden');
+                            dom.appScreen.classList.add('hidden');
+                            toggleAuthView('login');
+                        });
+                    }
+                } else {
+                    // No user is signed in, show login screen
+                    console.log("No user signed in.");
+                    currentUserData = null; // Clear user data
+                    lastProcessedUID = null; // Reset processed UID
+                    isAuthListenerInitialized = false; // Reset flag on logout
+                    dom.authScreens.classList.remove('hidden');
+                    dom.appScreen.classList.add('hidden');
+                    toggleAuthView('login'); // Ensure login form is shown by default
+                }
+            } catch (error) {
+                console.error("Error fetching user role or during auth state check:", error);
+                await signOut(auth); // Log out on error
+                dom.authScreens.classList.remove('hidden');
+                dom.appScreen.classList.add('hidden');
+                showModal('Error', 'Failed to retrieve user data. Please try again.');
+                toggleAuthView('login');
+            } finally {
+                isProcessingAuthState = false; // Reset flag
+            }
+        });
+
+
+        // --- Event Listeners ---
+        document.addEventListener('DOMContentLoaded', () => {
+            getDomElements(); // Initialize DOM elements first
+
+            // Attach event listeners for primary actions
+            if (dom.loginBtn) dom.loginBtn.addEventListener('click', handleLogin);
+            if (dom.verifyPhoneBtn) dom.verifyPhoneBtn.addEventListener('click', handlePhoneVerify);
+            if (dom.verifyOtpBtn) dom.verifyOtpBtn.addEventListener('click', handleOtpVerification);
+            if (dom.resendOtpBtn) dom.resendOtpBtn.addEventListener('click', handleResendOtp);
+            if (dom.signupBtn) dom.signupBtn.addEventListener('click', handleSignup);
+            if (dom.logoutBtn) dom.logoutBtn.addEventListener('click', handleLogout);
+
+            // Toggle authentication views
+            if (dom.showSignupBtn) dom.showSignupBtn.addEventListener('click', () => toggleAuthView('signup'));
+            if (dom.showLoginBtn) dom.showLoginBtn.addEventListener('click', () => toggleAuthView('login'));
+            if (dom.backToLoginBtn) dom.backToLoginBtn.addEventListener('click', () => toggleAuthView('login'));
+
+
+            // Attach event listeners for attendance form changes
+            if (dom.refreshLocationBtn) dom.refreshLocationBtn.addEventListener('click', checkUserLocationAndAttendance);
+            if (dom.morningCheck) dom.morningCheck.addEventListener('change', updateFormDisablementBasedOnTime);
+            if (dom.anEnters) dom.anEnters.addEventListener('change', updateFormDisablementBasedOnTime);
+            if (dom.anLeaves) dom.anLeaves.addEventListener('change', updateFormDisablementBasedOnTime);
+            if (dom.anNone) dom.anNone.addEventListener('change', updateFormDisablementBasedOnTime);
+            if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.addEventListener('click', submitAttendance);
+
+            // Initial call to update form disablement and set up interval
+            updateFormDisablementBasedOnTime();
+            setInterval(updateFormDisablementBasedOnTime, 60000); // Check every minute
+        });
     </script>
-    <!-- Google reCAPTCHA API script -->
-    <!-- The onloadCallback is implicitly called by the reCAPTCHA script once it's loaded -->
     <script src="https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit" async defer></script>
 </body>
 
