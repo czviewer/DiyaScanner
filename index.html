@@ -576,6 +576,77 @@
         let db;
         let app;
 
+        // Global variables for reCAPTCHA instance and widget ID
+        let recaptchaVerifierInstance = null;
+        let recaptchaWidgetId = null;
+
+        // --- DOM Elements (initialized in getDomElements) ---
+        const dom = {};
+
+        function getDomElements() {
+            dom.authScreens = document.getElementById('auth-screens');
+            dom.appScreen = document.getElementById('app-screen');
+
+            // Login Form Elements
+            dom.loginForm = document.getElementById('login-form');
+            dom.loginEmailInput = document.getElementById('login-email');
+            dom.loginPasswordInput = document.getElementById('login-password');
+            dom.loginBtn = document.getElementById('login-btn');
+            dom.showSignupBtn = document.getElementById('show-signup-btn');
+            dom.loginMessage = document.getElementById('login-message');
+
+            // Phone Verification Form Elements
+            dom.phoneVerifyForm = document.getElementById('phone-verify-form');
+            dom.last4DigitsInput = document.getElementById('last-4-digits');
+            dom.verifyPhoneBtn = document.getElementById('verify-phone-btn');
+            dom.backToLoginBtn = document.getElementById('back-to-login-btn');
+            dom.phoneVerifyMessage = document.getElementById('phone-verify-message');
+
+            // OTP Verification Form Elements
+            dom.otpForm = document.getElementById('otp-form');
+            dom.otpInput = document.getElementById('otp-input');
+            dom.verifyOtpBtn = document.getElementById('verify-otp-btn');
+            dom.resendOtpBtn = document.getElementById('resend-otp-btn');
+            dom.countdownTimer = document.getElementById('countdown-timer');
+            dom.recaptchaContainer = document.getElementById('recaptcha-container');
+            dom.otpMessage = document.getElementById('otp-message');
+
+            // Signup Form Elements
+            dom.signupForm = document.getElementById('signup-form');
+            dom.signupNameInput = document.getElementById('signup-name');
+            dom.signupEmailInput = document.getElementById('signup-email');
+            dom.signupPasswordInput = document.getElementById('signup-password');
+            dom.signupEmployeeIdInput = document.getElementById('signup-employee-id');
+            dom.signupPhoneInput = document.getElementById('signup-phone');
+            dom.signupBtn = document.getElementById('signup-btn');
+            dom.showLoginBtn = document.getElementById('show-login-btn');
+            dom.signupMessage = document.getElementById('signup-message');
+
+            // App Screen Elements
+            dom.logoutBtn = document.getElementById('logout-btn');
+            dom.userDisplayName = document.getElementById('user-display-name');
+            dom.locationStatus = document.getElementById('location-status');
+            dom.locationMessage = document.getElementById('location-message');
+            dom.attendanceSection = document.getElementById('attendance-section');
+            dom.morningCheck = document.getElementById('morning-check');
+            dom.anEnters = document.getElementById('an-enters');
+            dom.anLeaves = document.getElementById('an-leaves');
+            dom.anNone = document.getElementById('an-none');
+            dom.refreshLocationBtn = document.getElementById('refresh-location-btn');
+            dom.submitAttendanceBtn = document.getElementById('submit-attendance-btn');
+            dom.attendanceMessage = document.getElementById('attendance-message');
+
+            // Modal Elements
+            dom.messageModalOverlay = document.getElementById('message-modal-overlay');
+            dom.modalTitle = document.getElementById('modal-title');
+            dom.modalMessage = document.getElementById('modal-message');
+            dom.modalCloseBtn = document.querySelector('#message-modal-overlay .modal-close-btn');
+            dom.modalOkBtn = document.querySelector('#message-modal-overlay .btn-primary');
+        }
+
+        // Call getDomElements immediately to ensure DOM elements are available
+        getDomElements();
+
         // New function to set up RecaptchaVerifier instance (now global)
         function setupRecaptchaVerifier() {
             // Ensure dom object is available before accessing its properties
@@ -691,8 +762,7 @@
         let phoneNumberToVerify = ''; // Stores phone number for OTP flow
         const OTP_COOLDOWN_SECONDS = 120; // 2 minutes for OTP resend
         let otpCountdownInterval = null;
-        let recaptchaVerifierInstance = null;
-        let recaptchaWidgetId = null;
+        // recaptchaVerifierInstance and recaptchaWidgetId are now declared globally above
         let currentDeviceId = null; // Stores the unique device ID for device binding
         // isFirebaseAuthReady is now declared globally above
 
@@ -700,71 +770,6 @@
         let isProcessingAuthState = false; // Prevents re-entry into onAuthStateChanged processing
         let lastProcessedUID = null; // Tracks the UID that was last fully processed by onAuthStateChanged
         let isAuthListenerInitialized = false; // Ensures auth state listener only processes once per session
-
-        // --- DOM Elements (initialized in getDomElements) ---
-        const dom = {};
-
-        function getDomElements() {
-            dom.authScreens = document.getElementById('auth-screens');
-            dom.appScreen = document.getElementById('app-screen');
-
-            // Login Form Elements
-            dom.loginForm = document.getElementById('login-form');
-            dom.loginEmailInput = document.getElementById('login-email');
-            dom.loginPasswordInput = document.getElementById('login-password'); // Corrected typo
-            dom.loginBtn = document.getElementById('login-btn');
-            dom.showSignupBtn = document.getElementById('show-signup-btn');
-            dom.loginMessage = document.getElementById('login-message');
-
-            // Phone Verification Form Elements
-            dom.phoneVerifyForm = document.getElementById('phone-verify-form');
-            dom.last4DigitsInput = document.getElementById('last-4-digits');
-            dom.verifyPhoneBtn = document.getElementById('verify-phone-btn');
-            dom.backToLoginBtn = document.getElementById('back-to-login-btn');
-            dom.phoneVerifyMessage = document.getElementById('phone-verify-message');
-
-            // OTP Verification Form Elements
-            dom.otpForm = document.getElementById('otp-form');
-            dom.otpInput = document.getElementById('otp-input');
-            dom.verifyOtpBtn = document.getElementById('verify-otp-btn');
-            dom.resendOtpBtn = document.getElementById('resend-otp-btn');
-            dom.countdownTimer = document.getElementById('countdown-timer');
-            dom.recaptchaContainer = document.getElementById('recaptcha-container');
-            dom.otpMessage = document.getElementById('otp-message');
-
-            // Signup Form Elements
-            dom.signupForm = document.getElementById('signup-form');
-            dom.signupNameInput = document.getElementById('signup-name');
-            dom.signupEmailInput = document.getElementById('signup-email');
-            dom.signupPasswordInput = document.getElementById('signup-password');
-            dom.signupEmployeeIdInput = document.getElementById('signup-employee-id');
-            dom.signupPhoneInput = document.getElementById('signup-phone');
-            dom.signupBtn = document.getElementById('signup-btn');
-            dom.showLoginBtn = document.getElementById('show-login-btn');
-            dom.signupMessage = document.getElementById('signup-message');
-
-            // App Screen Elements
-            dom.logoutBtn = document.getElementById('logout-btn');
-            dom.userDisplayName = document.getElementById('user-display-name');
-            dom.locationStatus = document.getElementById('location-status');
-            dom.locationMessage = document.getElementById('location-message');
-            dom.attendanceSection = document.getElementById('attendance-section');
-            dom.morningCheck = document.getElementById('morning-check');
-            dom.anEnters = document.getElementById('an-enters');
-            dom.anLeaves = document.getElementById('an-leaves');
-            dom.anNone = document.getElementById('an-none');
-            dom.refreshLocationBtn = document.getElementById('refresh-location-btn');
-            dom.submitAttendanceBtn = document.getElementById('submit-attendance-btn');
-            dom.attendanceMessage = document.getElementById('attendance-message');
-
-            // Modal Elements
-            dom.messageModalOverlay = document.getElementById('message-modal-overlay');
-            dom.modalTitle = document.getElementById('modal-title');
-            dom.modalMessage = document.getElementById('modal-message');
-            dom.modalCloseBtn = document.querySelector('#message-modal-overlay .modal-close-btn');
-            dom.modalOkBtn = document.querySelector('#message-modal-overlay .btn-primary');
-        }
-
 
         // --- Utility Functions ---
         function showMessage(element, message, type) {
@@ -1596,7 +1601,7 @@
 
         // --- Event Listeners ---
         document.addEventListener('DOMContentLoaded', () => {
-            getDomElements(); // Initialize DOM elements first
+            // getDomElements(); // Moved this call to global script block
 
             // Attach event listeners for primary actions
             if (dom.loginBtn) dom.loginBtn.addEventListener('click', handleLogin);
