@@ -527,7 +527,13 @@
             <div id="location-status" class="location-status-box">
                 <p><span id="location-message">Checking location...</span></p>
             </div>
-            <div id="attendance-section" class="space-y-6 hidden">
+            <!-- Location Refresh Button - Always visible on app screen -->
+            <div class="flex justify-center mt-4">
+                <button id="refresh-location-btn" class="btn btn-secondary w-auto px-6 py-3">
+                    <i class="fas fa-sync-alt"></i> Refresh Location
+                </button>
+            </div>
+            <div id="attendance-section" class="space-y-6">
                 <div class="form-group">
                     <label for="morning-check"
                         class="flex items-center text-lg font-semibold text-gray-700 cursor-pointer">
@@ -549,9 +555,6 @@
                     </div>
                 </div>
                 <div class="attendance-buttons">
-                    <button id="refresh-location-btn" class="btn btn-secondary">
-                        <i class="fas fa-sync-alt"></i> Refresh Location
-                    </button>
                     <button id="submit-attendance-btn" class="btn btn-primary" disabled>
                         <i class="fas fa-check-circle"></i> Submit Attendance
                     </button>
@@ -876,6 +879,15 @@
         async function checkUserLocationAndAttendance() {
             if (!currentUserData) {
                 showMessage(dom.locationMessage, "User data not loaded. Please log in again.", 'error');
+                // Ensure submit button is disabled if no user data
+                if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
+                // Keep attendance section visible but inputs disabled if no user data
+                if (dom.attendanceSection) dom.attendanceSection.classList.remove('hidden');
+                // Disable attendance inputs
+                if (dom.morningCheck) dom.morningCheck.disabled = true;
+                if (dom.anEnters) dom.anEnters.disabled = true;
+                if (dom.anLeaves) dom.anLeaves.disabled = true;
+                if (dom.anNone) dom.anNone.disabled = true;
                 return;
             }
 
@@ -884,7 +896,13 @@
                 showModal('Employee ID Missing', 'Your employee ID is missing. Please contact Admin. Attendance will not be recorded.');
                 dom.locationStatus.classList.add('error');
                 dom.locationMessage.textContent = 'Employee ID missing.';
-                dom.attendanceSection.classList.add('hidden');
+                // Keep attendance section visible but inputs disabled
+                if (dom.attendanceSection) dom.attendanceSection.classList.remove('hidden');
+                if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
+                if (dom.morningCheck) dom.morningCheck.disabled = true;
+                if (dom.anEnters) dom.anEnters.disabled = true;
+                if (dom.anLeaves) dom.anLeaves.disabled = true;
+                if (dom.anNone) dom.anNone.disabled = true;
                 return;
             }
             if (!currentUserData.phone) {
@@ -893,14 +911,26 @@
                 });
                 dom.locationStatus.classList.add('error');
                 dom.locationMessage.textContent = 'Phone number missing.';
-                dom.attendanceSection.classList.add('hidden');
+                // Keep attendance section visible but inputs disabled
+                if (dom.attendanceSection) dom.attendanceSection.classList.remove('hidden');
+                if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
+                if (dom.morningCheck) dom.morningCheck.disabled = true;
+                if (dom.anEnters) dom.anEnters.disabled = true;
+                if (dom.anLeaves) dom.anLeaves.disabled = true;
+                if (dom.anNone) dom.anNone.disabled = true;
                 return;
             }
 
             dom.locationStatus.classList.remove('verified', 'error');
             dom.locationMessage.textContent = 'Checking location...';
-            dom.attendanceSection.classList.add('hidden');
-            dom.submitAttendanceBtn.disabled = true;
+            // Ensure attendance section is visible, but controls are disabled until location is verified
+            if (dom.attendanceSection) dom.attendanceSection.classList.remove('hidden');
+            if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
+            if (dom.morningCheck) dom.morningCheck.disabled = true;
+            if (dom.anEnters) dom.anEnters.disabled = true;
+            if (dom.anLeaves) dom.anLeaves.disabled = true;
+            if (dom.anNone) dom.anNone.disabled = true;
+
 
             if ("geolocation" in navigator) {
                 try {
@@ -934,21 +964,28 @@
                             dom.locationStatus.classList.remove('error');
                             dom.locationStatus.classList.add('verified');
                             dom.locationMessage.textContent = `Location Verified: Within ${currentUserData.branch} branch.`;
-                            dom.attendanceSection.classList.remove('hidden');
-                            updateFormDisablementBasedOnTime(); // Enable/disable based on time
+                            updateFormDisablementBasedOnTime(); // Enable/disable based on time and location
                         } else {
                             dom.locationStatus.classList.remove('verified');
                             dom.locationStatus.classList.add('error');
                             dom.locationMessage.textContent = `Location Error: You are ${distance.toFixed(2)}m away from ${currentUserData.branch} branch. Please move closer.`;
-                            dom.attendanceSection.classList.add('hidden');
-                            dom.submitAttendanceBtn.disabled = true;
+                            // Ensure attendance inputs are disabled if out of range
+                            if (dom.morningCheck) dom.morningCheck.disabled = true;
+                            if (dom.anEnters) dom.anEnters.disabled = true;
+                            if (dom.anLeaves) dom.anLeaves.disabled = true;
+                            if (dom.anNone) dom.anNone.disabled = true;
+                            if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
                         }
                     } else {
                         dom.locationStatus.classList.remove('verified');
                         dom.locationStatus.classList.add('error');
                         dom.locationMessage.textContent = `Branch location not found for ${currentUserData.branch}. Contact Admin.`;
-                        dom.attendanceSection.classList.add('hidden');
-                        dom.submitAttendanceBtn.disabled = true;
+                        // Ensure attendance inputs are disabled if branch not found
+                        if (dom.morningCheck) dom.morningCheck.disabled = true;
+                        if (dom.anEnters) dom.anEnters.disabled = true;
+                        if (dom.anLeaves) dom.anLeaves.disabled = true;
+                        if (dom.anNone) dom.anNone.disabled = true;
+                        if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
                     }
 
                 } catch (error) {
@@ -964,15 +1001,23 @@
                     dom.locationStatus.classList.remove('verified');
                     dom.locationStatus.classList.add('error');
                     dom.locationMessage.textContent = `Location Error: ${errorMessage}`;
-                    dom.attendanceSection.classList.add('hidden');
-                    dom.submitAttendanceBtn.disabled = true;
+                    // Ensure attendance inputs are disabled on error
+                    if (dom.morningCheck) dom.morningCheck.disabled = true;
+                    if (dom.anEnters) dom.anEnters.disabled = true;
+                    if (dom.anLeaves) dom.anLeaves.disabled = true;
+                    if (dom.anNone) dom.anNone.disabled = true;
+                    if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
                 }
             } else {
                 dom.locationStatus.classList.remove('verified');
                 dom.locationStatus.classList.add('error');
                 dom.locationMessage.textContent = 'Geolocation is not supported by your browser.';
-                dom.attendanceSection.classList.add('hidden');
-                dom.submitAttendanceBtn.disabled = true;
+                // Ensure attendance inputs are disabled if geolocation not supported
+                if (dom.morningCheck) dom.morningCheck.disabled = true;
+                if (dom.anEnters) dom.anEnters.disabled = true;
+                if (dom.anLeaves) dom.anLeaves.disabled = true;
+                if (dom.anNone) dom.anNone.disabled = true;
+                if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
             }
         }
 
@@ -998,24 +1043,31 @@
             const currentHour = now.getHours();
             const currentDay = now.getDay(); // 0 for Sunday, 1 for Monday, ..., 6 for Saturday
 
+            // Check if location is verified
+            const isLocationVerified = dom.locationStatus?.classList.contains('verified');
+
             // Sunday logic: Allow attendance marking for extra work
             if (currentDay === 0) {
                 hideMessage(dom.attendanceMessage);
 
-                if (dom.morningCheck) dom.morningCheck.disabled = false;
-                if (dom.anEnters) dom.anEnters.disabled = false;
-                if (dom.anLeaves) dom.anLeaves.disabled = false;
-                if (dom.anNone) dom.anNone.disabled = false;
+                // Enable all attendance inputs on Sunday if location is verified
+                if (dom.morningCheck) dom.morningCheck.disabled = !isLocationVerified;
+                if (dom.anEnters) dom.anEnters.disabled = !isLocationVerified;
+                if (dom.anLeaves) dom.anLeaves.disabled = !isLocationVerified;
+                if (dom.anNone) dom.anNone.disabled = !isLocationVerified;
 
                 const morningChecked = dom.morningCheck?.checked;
                 const afternoonSelected = dom.anEnters?.checked || dom.anLeaves?.checked || dom.anNone?.checked;
 
                 if (dom.submitAttendanceBtn) {
-                    dom.submitAttendanceBtn.disabled = !(morningChecked || afternoonSelected);
+                    // Only enable submit if location is verified AND at least one option is checked
+                    dom.submitAttendanceBtn.disabled = !(isLocationVerified && (morningChecked || afternoonSelected));
                 }
 
-                if (dom.locationStatus?.classList.contains('verified')) {
+                if (isLocationVerified) {
                     showMessage(dom.attendanceMessage, "It's Sunday. You can mark your attendance for Sunday work.", 'success');
+                } else {
+                    showMessage(dom.attendanceMessage, "Location not verified. Cannot submit attendance.", 'error');
                 }
                 return;
             }
@@ -1028,19 +1080,21 @@
 
             // Morning attendance: 7 AM to 12 PM (noon)
             if (currentHour >= 7 && currentHour < 12) {
-                if (dom.morningCheck) dom.morningCheck.disabled = false;
+                if (dom.morningCheck) dom.morningCheck.disabled = !isLocationVerified;
                 if (dom.anEnters) dom.anEnters.disabled = true;
                 if (dom.anLeaves) dom.anLeaves.disabled = true;
                 if (dom.anNone) dom.anNone.disabled = true;
-                dom.submitAttendanceBtn.disabled = !morningChecked;
+                // Only enable submit if location is verified AND morning check is true
+                dom.submitAttendanceBtn.disabled = !(isLocationVerified && morningChecked);
             }
             // Afternoon attendance: 12 PM (noon) to 3 PM
             else if (currentHour >= 12 && currentHour < 15) {
                 if (dom.morningCheck) dom.morningCheck.disabled = true;
-                if (dom.anEnters) dom.anEnters.disabled = false;
-                if (dom.anLeaves) dom.anLeaves.disabled = false;
-                if (dom.anNone) dom.anNone.disabled = false;
-                dom.submitAttendanceBtn.disabled = !afternoonStatusSelected;
+                if (dom.anEnters) dom.anEnters.disabled = !isLocationVerified;
+                if (dom.anLeaves) dom.anLeaves.disabled = !isLocationVerified;
+                if (dom.anNone) dom.anNone.disabled = !isLocationVerified;
+                // Only enable submit if location is verified AND afternoon status is selected
+                dom.submitAttendanceBtn.disabled = !(isLocationVerified && afternoonStatusSelected);
             }
             // After 3 PM or before 7 AM
             else {
@@ -1052,9 +1106,18 @@
                 showMessage(dom.attendanceMessage, "Attendance is closed for the day.", 'error');
             }
 
-            // Always disable submit if location not verified
-            if (dom.locationStatus && !dom.locationStatus.classList.contains('verified')) {
+            // Always disable submit and inputs if location not verified, overriding time-based enablement
+            if (!isLocationVerified) {
                 if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
+                if (dom.morningCheck) dom.morningCheck.disabled = true;
+                if (dom.anEnters) dom.anEnters.disabled = true;
+                if (dom.anLeaves) dom.anLeaves.disabled = true;
+                if (dom.anNone) dom.anNone.disabled = true;
+
+                // Ensure to override the message if location is not verified, even on Sunday or within time
+                if (currentDay !== 0 || !(currentHour >= 7 && currentHour < 15)) { // Don't override the "closed for the day" message unless it's a valid time slot.
+                    showMessage(dom.attendanceMessage, "Location not verified. Cannot submit attendance.", 'error');
+                }
             }
         }
 
@@ -1077,14 +1140,9 @@
                     dom.anNone.checked ? 'None' : null;
 
             const now = new Date();
-
+            const isSunday = now.getDay() === 0; // 0 for Sunday
             const currentHour = now.getHours();
 
-
-            // Add sundayWork tag if it's Sunday
-            if (isSunday) {
-                updates.sundayWork = true;
-            }
 
             try {
                 const snapshot = await get(attendanceRef);
@@ -1120,22 +1178,19 @@
                 // If it's Sunday, and no morning/afternoon status is explicitly selected,
                 // we still allow submission if sundayWork is true.
                 // This allows for "Sunday work" to be recorded without specific morning/afternoon times.
-                if (isSunday && !updates.morning && !updates.afternoon && !existingData) {
-                    // If no morning/afternoon data yet for Sunday, set a generic Sunday attendance timestamp
-                    // This prevents an empty attendance record if only sundayWork is true.
-                    updates.sundayAttendanceTimestamp = now.toISOString();
+                if (isSunday) {
+                    updates.sundayWork = true;
+                    if (!updates.morning && !updates.afternoon && !existingData) {
+                        // If no morning/afternoon data yet for Sunday, set a generic Sunday attendance timestamp
+                        // This prevents an empty attendance record if only sundayWork is true.
+                        updates.sundayAttendanceTimestamp = now.toISOString();
+                    }
                 }
-
 
                 // Prevent submitting empty updates if nothing changed or no valid time slot
                 if (Object.keys(updates).length === 0) {
                     showModal('No Changes', 'No attendance data to submit for the current time slot.');
                     return;
-                }
-                // Mark Sunday work if today is Sunday
-                const isSunday = now.getDay() === 0;
-                if (isSunday) {
-                    updates.sundayWork = true;
                 }
 
                 await update(attendanceRef, updates); // Use update to merge, or set to overwrite
@@ -1551,7 +1606,7 @@
             if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.addEventListener('click', submitAttendance);
 
             // Initial call to update form disablement and set up interval
-            updateFormDisablementBasedOnTime();
+            // The onAuthStateChanged listener now handles the initial call to checkUserLocationAndAttendance()
             setInterval(updateFormDisablementBasedOnTime, 60000); // Check every minute
         });
     </script>
