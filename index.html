@@ -636,12 +636,14 @@ let lastProcessedUID = null; // Tracks the UID that was last fully processed by 
 // they are defined as null and checked before use.
 const dom = {
     authScreens: null, appScreen: null,
-    loginForm: null, loginEmailInput: null, loginPasswordInput: null, loginBtn: null, loginMessage: null, showSignupBtn: null,
-    phoneVerifyForm: null, last4DigitsInput: null, verifyPhoneBtn: null, phoneVerifyMessage: null, backToLoginBtn: null,
-    otpForm: null, otpInput: null, verifyOtpBtn: null, otpMessage: null, resendOtpBtn: null, countdownTimer: null, recaptchaContainer: null,
-    signupForm: null, signupNameInput: null, signupEmailInput: null, signupPasswordInput: null, signupEmployeeIdInput: null, signupPhoneInput: null, signupBtn: null, signupMessage: null, showLoginBtn: null,
+    loginForm: null, loginEmailInput: null, loginPasswordInput: null, loginBtn: null, showSignupBtn: null,
+    phoneVerifyForm: null, last4DigitsInput: null, verifyPhoneBtn: null, backToLoginBtn: null,
+    otpForm: null, otpInput: null, verifyOtpBtn: null, resendOtpBtn: null, countdownTimer: null, recaptchaContainer: null,
+    signupForm: null, signupNameInput: null, signupEmailInput: null, signupPasswordInput: null, signupEmployeeIdInput: null, signupPhoneInput: null, signupBtn: null, showLoginBtn: null,
     logoutBtn: null, userDisplayName: null, locationStatusDiv: null, locationMessageSpan: null, attendanceSection: null,
-    morningCheck: null, anEnters: null, anLeaves: null, anNone: null, refreshLocationBtn: null, submitAttendanceBtn: null, attendanceMessage: null,
+    morningCheck: null, anEnters: null, anLeaves: null, anNone: null, refreshLocationBtn: null, submitAttendanceBtn: null,
+    // Message elements are also part of DOM, ensure they are initialized
+    loginMessage: null, phoneVerifyMessage: null, otpMessage: null, signupMessage: null, attendanceMessage: null,
     messageModalOverlay: null, modalTitle: null, modalMessage: null, modalCloseBtn: null, modalOkBtn: null
 };
 
@@ -711,10 +713,7 @@ function getDomElements() {
     dom.modalOkBtn = document.querySelector('#message-modal-overlay .btn');
 }
 
-// Call this once the DOM is loaded
-document.addEventListener('DOMContentLoaded', getDomElements);
-
-// --- Utility Functions (Adapted for standalone JS) ---
+// --- Utility Functions ---
 
 /**
  * Generates a simple UUID for device identification.
@@ -795,20 +794,6 @@ function hideModal() {
     }
 }
 
-// Modal event listeners (ensure DOM elements are available)
-document.addEventListener('DOMContentLoaded', () => {
-    if (dom.modalCloseBtn) dom.modalCloseBtn.addEventListener('click', hideModal);
-    if (dom.modalOkBtn) dom.modalOkBtn.addEventListener('click', hideModal);
-    if (dom.messageModalOverlay) {
-        dom.messageModalOverlay.addEventListener('click', (event) => {
-            if (event.target === dom.messageModalOverlay) {
-                hideModal();
-            }
-        });
-    }
-});
-
-
 /**
  * Displays a message on the login/signup screen.
  * @param {HTMLElement} messageElement - The element to display the message in.
@@ -877,27 +862,6 @@ function toggleAuthView(view) {
             break;
     }
 }
-
-// Event listeners for toggling auth views (ensure DOM elements are available)
-document.addEventListener('DOMContentLoaded', () => {
-    if (dom.showSignupBtn) dom.showSignupBtn.addEventListener('click', () => toggleAuthView('signup'));
-    if (dom.showLoginBtn) dom.showLoginBtn.addEventListener('click', () => toggleAuthView('login'));
-    if (dom.backToLoginBtn) {
-        dom.backToLoginBtn.addEventListener('click', () => {
-            clearInterval(otpCountdownInterval);
-            if (dom.countdownTimer) dom.countdownTimer.textContent = '';
-            if (dom.resendOtpBtn) dom.resendOtpBtn.disabled = false;
-            confirmationResult = null;
-            phoneNumberToVerify = '';
-            sessionStorage.removeItem('otpVerifiedForUID');
-            if (recaptchaWidgetId !== null && typeof grecaptcha !== 'undefined') {
-                grecaptcha.reset(recaptchaWidgetId);
-            }
-            toggleAuthView('login');
-        });
-    }
-});
-
 
 /**
  * Fetches user profile data from Realtime Database.
@@ -1625,13 +1589,6 @@ if (dom.submitAttendanceBtn) {
     });
 }
 
-if (dom.refreshLocationBtn) dom.refreshLocationBtn.addEventListener('click', checkUserLocationAndAttendance);
-if (dom.morningCheck) dom.morningCheck.addEventListener('change', updateFormDisablementBasedOnTime);
-if (dom.anEnters) dom.anEnters.addEventListener('change', updateFormDisablementBasedOnTime);
-if (dom.anLeaves) dom.anLeaves.addEventListener('change', updateFormDisablementBasedOnTime);
-if (dom.anNone) dom.anNone.addEventListener('change', updateFormDisablementBasedOnTime);
-
-
 // --- Main Authentication State Listener (Passive Observer) ---
 onAuthStateChanged(auth, async (user) => {
     console.log("🔥 onAuthStateChanged triggered. User:", user?.uid);
@@ -1723,10 +1680,6 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// Set up a timer to periodically update form disablement based on time
-// This interval runs independently of auth state changes.
-setInterval(updateFormDisablementBasedOnTime, 60000); // Check every minute
-
 // Global onloadCallback for reCAPTCHA (if used in HTML)
 // This function needs to be globally accessible for the reCAPTCHA script.
 window.onloadCallback = function() {
@@ -1734,6 +1687,27 @@ window.onloadCallback = function() {
     // Any reCAPTCHA rendering for explicit size can go here if needed,
     // but for invisible reCAPTCHA, it's typically handled by RecaptchaVerifier.
 };
+
+// --- Event Listener Attachments (Ensured to run after DOM is loaded) ---
+document.addEventListener('DOMContentLoaded', () => {
+    // Attach event listeners for primary actions
+    if (dom.loginBtn) dom.loginBtn.addEventListener('click', handleLogin);
+    if (dom.verifyPhoneBtn) dom.verifyPhoneBtn.addEventListener('click', handlePhoneVerify);
+    if (dom.verifyOtpBtn) dom.verifyOtpBtn.addEventListener('click', handleOtpVerification);
+    if (dom.signupBtn) dom.signupBtn.addEventListener('click', handleSignup);
+    if (dom.logoutBtn) dom.logoutBtn.addEventListener('click', handleLogout);
+
+    // Attach event listeners for attendance form changes
+    if (dom.refreshLocationBtn) dom.refreshLocationBtn.addEventListener('click', checkUserLocationAndAttendance);
+    if (dom.morningCheck) dom.morningCheck.addEventListener('change', updateFormDisablementBasedOnTime);
+    if (dom.anEnters) dom.anEnters.addEventListener('change', updateFormDisablementBasedOnTime);
+    if (dom.anLeaves) dom.anLeaves.addEventListener('change', updateFormDisablementBasedOnTime);
+    if (dom.anNone) dom.anNone.addEventListener('change', updateFormDisablementBasedOnTime);
+
+    // Initial call to update form disablement and set up interval
+    updateFormDisablementBasedOnTime();
+    setInterval(updateFormDisablementBasedOnTime, 60000); // Check every minute
+});
 
     </script>
     <!-- Google reCAPTCHA API script -->
