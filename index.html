@@ -587,7 +587,9 @@
             RecaptchaVerifier,
             signInWithPhoneNumber,
             setPersistence,
-            browserLocalPersistence
+            browserLocalPersistence,
+            PhoneAuthProvider,
+            linkWithCredential
         } from 'https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js';
         import {
             getDatabase,
@@ -1258,9 +1260,9 @@
             }
         }
 
-
         async function handleOtpVerification() {
             const otp = dom.otpInput.value;
+            const originalUser = auth.currentUser; // Get the user who is ALREADY logged in
 
             if (!otp || otp.length !== 6) {
                 showMessage(dom.otpMessage, 'Please enter the 6-digit OTP.', 'error');
@@ -1268,7 +1270,14 @@
             }
 
             if (!confirmationResult) {
-                showMessage(dom.otpMessage, 'No OTP request initiated. Please go back and verify phone.', 'error');
+                showMessage(dom.otpMessage, 'No OTP request initiated. Please go back and verify your phone.', 'error');
+                return;
+            }
+
+            if (!originalUser) {
+                showModal('Authentication Error', 'You are not signed in. Please log in again.', () => {
+                    toggleAuthView('login');
+                });
                 return;
             }
 
@@ -1276,26 +1285,31 @@
             dom.verifyOtpBtn.disabled = true;
 
             try {
-                await confirmationResult.confirm(otp);
-                // OTP verified, update user's isVerified status in DB
-                if (auth.currentUser) {
-                    await update(ref(db, 'users/' + auth.currentUser.uid), {
-                        isVerified: true
-                    });
-                    currentUserData.isVerified = true; // Update local state
-                }
+                // Create a credential with the OTP
+                const credential = PhoneAuthProvider.credential(confirmationResult.verificationId, otp);
+                
+                // Link the credential to the existing user
+                await linkWithCredential(originalUser, credential);
+
+                // Now that linking is successful, update the user's profile in the database
+                await update(ref(db, 'users/' + originalUser.uid), {
+                    isVerified: true
+                });
+                currentUserData.isVerified = true; // Update local state
 
                 showMessage(dom.otpMessage, 'Phone number verified successfully!', 'success');
                 showModal('Verification Success', 'Your phone number has been verified. Welcome!');
-                // Automatically transition to app screen after successful verification
+
+                // Transition to the main app screen
                 dom.authScreens.classList.add('hidden');
                 dom.appScreen.classList.remove('hidden');
-                checkUserLocationAndAttendance(); // Check location after successful login/verification
+                checkUserLocationAndAttendance();
+
             } catch (error) {
-                console.error("OTP verification error:", error);
+                console.error("OTP verification/linking error:", error);
                 let errorMessage = "OTP verification failed. Please try again.";
-                if (error.code === 'auth/invalid-verification-code') {
-                    errorMessage = "Invalid OTP. Please check and try again.";
+                if (error.code === 'auth/invalid-verification-code' || error.code === 'auth/credential-already-in-use') {
+                    errorMessage = "Invalid OTP or this phone number is already linked to another account.";
                 } else if (error.code === 'auth/code-expired') {
                     errorMessage = "OTP expired. Please resend.";
                     dom.resendOtpBtn.disabled = false;
@@ -1305,6 +1319,7 @@
                 dom.verifyOtpBtn.disabled = false;
             }
         }
+
 
         async function handleResendOtp() {
             if (!phoneNumberToVerify) {
@@ -1360,6 +1375,7 @@
                 return;
             }
 
+            // This check prevents the flicker/reload when the phone credential linking happens
             if (user && user.uid === lastProcessedUID && isAuthListenerInitialized) {
                 console.log("Auth state for this user already processed. Skipping.");
                 return;
@@ -1384,20 +1400,13 @@
                         if (currentUserData.role !== 'employee') {
                             showModal('Access Denied', 'You do not have employee access to this application.', async () => {
                                 await signOut(auth); // Log out non-employees
-                                dom.authScreens.classList.remove('hidden');
-                                dom.appScreen.classList.add('hidden');
-                                toggleAuthView('login');
                             });
                             return; // Stop further processing for non-employees
                         }
 
-                        // Corrected: Check currentUserData.id
                         if (!currentUserData.id) {
                             showModal('Employee ID Missing', 'Your employee ID is missing. Please contact Admin. Attendance will not be recorded.', async () => {
                                 await signOut(auth); // Log out if employee ID is missing
-                                dom.authScreens.classList.remove('hidden');
-                                dom.appScreen.classList.add('hidden');
-                                toggleAuthView('login');
                             });
                             return;
                         }
@@ -1405,9 +1414,6 @@
                         if (!currentUserData.phone) {
                             showModal('Phone Not Found', 'Your registered phone number is missing or invalid. Please contact Admin.', async () => {
                                 await signOut(auth);
-                                dom.authScreens.classList.remove('hidden');
-                                dom.appScreen.classList.add('hidden');
-                                toggleAuthView('login');
                             });
                             return;
                         }
@@ -1419,9 +1425,6 @@
                             if (!isBound) {
                                 showModal('Device Not Recognized', 'This device is not registered. Please contact Admin.', async () => {
                                     await signOut(auth);
-                                    dom.authScreens.classList.remove('hidden');
-                                    dom.appScreen.classList.add('hidden');
-                                    toggleAuthView('login');
                                 });
                                 return;
                             }
@@ -1440,14 +1443,14 @@
                             showModal('Verification Required', 'Please verify your phone number to access the app.');
                         }
                     } else {
-                        // User exists in Auth but not in Realtime DB (should not happen with proper signup flow)
+                        // User exists in Auth but not in Realtime DB (should not happen with proper signup/linking flow)
                         console.warn("User data not found in DB for UID:", user.uid);
                         showModal('User Data Missing', 'Your user profile is incomplete. Please contact Admin.', async () => {
-                            await deleteUser(user); // Clean up incomplete user
+                            // Clean up incomplete user from Auth, but check if it's not an anonymous user from phone auth
+                             if (user.isAnonymous) {
+                                await deleteUser(user);
+                            }
                             await signOut(auth);
-                            dom.authScreens.classList.remove('hidden');
-                            dom.appScreen.classList.add('hidden');
-                            toggleAuthView('login');
                         });
                     }
                 } else {
