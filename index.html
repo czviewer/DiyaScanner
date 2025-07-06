@@ -681,6 +681,7 @@
         let otpCountdownInterval = null;
         let recaptchaVerifierInstance = null;
         let recaptchaWidgetId = null;
+        let currentDeviceId = null; // Stores the unique device ID
 
         // Attendance record to keep track of current state and locked fields
         let attendanceRecord = {
@@ -691,6 +692,51 @@
             morningLocked: false,
             anLocked: false
         };
+
+        /**
+         * Generates a simple UUID for device identification.
+         * In a real Capacitor app, you would use `@capacitor/device` or `@capacitor/app`
+         * to get a persistent device identifier like Android ID.
+         * @returns {string} A unique device identifier.
+         */
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0,
+                    v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        /**
+         * Asynchronously gets the device ID.
+         * For web/testing, it generates a UUID.
+         * For a Capacitor app, you'd use:
+         * import { Device } from '@capacitor/device';
+         * const info = await Device.getId();
+         * return info.uuid;
+         * Or:
+         * import { App } from '@capacitor/app';
+         * const info = await App.getInfo();
+         * return info.id; // Package name, not unique per device
+         * For a truly persistent device ID on Android, you might need a custom plugin
+         * or Firebase Installations API (which is more about app instance ID).
+         * For this example, we'll stick to a simple UUID for demonstration.
+         */
+        async function getDeviceId() {
+            if (currentDeviceId) {
+                return currentDeviceId;
+            }
+            // Simulate getting a device ID. In a real Capacitor app, this would be native.
+            // For web, we store it in localStorage to simulate persistence across browser sessions.
+            let deviceId = localStorage.getItem('app_device_id');
+            if (!deviceId) {
+                deviceId = generateUUID();
+                localStorage.setItem('app_device_id', deviceId);
+            }
+            currentDeviceId = deviceId;
+            return currentDeviceId;
+        }
+
 
         /**
          * Haversine formula to calculate distance between two lat/lng points.
@@ -878,6 +924,25 @@
                     });
                     return;
                 }
+
+                // Get current device ID
+                const currentDeviceIdentifier = await getDeviceId();
+
+                // Check for device ID match
+                if (fetchedUserData.deviceId && fetchedUserData.deviceId !== currentDeviceIdentifier) {
+                    await signOut(auth);
+                    showModal('Device Mismatch', '❌ Attendance is not allowed from this device. Please contact Admin.', () => {
+                        toggleAuthView('login');
+                    });
+                    return;
+                }
+
+                // If deviceId is not set in DB, set it now (first successful login from this device)
+                if (!fetchedUserData.deviceId) {
+                    await update(ref(db, `users/${user.uid}`), { deviceId: currentDeviceIdentifier });
+                    console.log("Device ID stored for first login:", currentDeviceIdentifier);
+                }
+
 
                 if (fetchedUserData.role !== 'employee') {
                     // Not an employee
@@ -1166,6 +1231,8 @@
             try {
                 await signOut(auth);
                 sessionStorage.removeItem('otpVerified'); // Clear OTP verified flag on logout
+                localStorage.removeItem('app_device_id'); // Clear device ID on logout
+                currentDeviceId = null; // Reset in memory
                 dom.authScreens.classList.remove('hidden');
                 dom.appScreen.classList.add('hidden');
                 dom.loginEmailInput.value = '';
@@ -1552,18 +1619,18 @@
 
 
         // Initial authentication state check
-        let isAuthListenerInitialized = false; // Flag to ensure the listener logic runs only once per session
         onAuthStateChanged(auth, async (user) => {
             console.log("🔥 onAuthStateChanged triggered. User:", user?.uid);
 
             if (user) {
                 // User is signed in.
-                // Attempt to fetch user data with retry logic, regardless of previous state
+                const currentDeviceIdentifier = await getDeviceId(); // Get current device ID
+
+                // Attempt to fetch user data with retry logic
                 const fetchedUserData = await fetchUserProfileWithRetry(user.uid);
 
                 if (!fetchedUserData) {
                     // User data not found in DB after retries, even though auth user exists.
-                    // This indicates a problem with the user's profile data or DB connectivity.
                     await signOut(auth); // Log out immediately
                     showModal('User Data Missing', 'Your user profile data could not be retrieved. Please contact Admin.', () => {
                         toggleAuthView('login');
@@ -1573,6 +1640,21 @@
 
                 // If user data is successfully fetched, assign it to currentUserData
                 currentUserData = fetchedUserData;
+
+                // Device ID validation: Check if stored deviceId matches current deviceId
+                if (currentUserData.deviceId && currentUserData.deviceId !== currentDeviceIdentifier) {
+                    await signOut(auth); // Log out on device mismatch
+                    showModal('Device Mismatch', '❌ Attendance is not allowed from this device. Please contact Admin.', () => {
+                        toggleAuthView('login');
+                    });
+                    return; // Stop further processing
+                }
+
+                // If deviceId is not set in DB, set it now (first successful login from this device)
+                if (!currentUserData.deviceId) {
+                    await update(ref(db, `users/${user.uid}`), { deviceId: currentDeviceIdentifier });
+                    console.log("Device ID stored for first login:", currentDeviceIdentifier);
+                }
 
                 // Now perform all necessary checks on the confirmed currentUserData
                 if (currentUserData.role !== 'employee') {
@@ -1616,7 +1698,6 @@
                 }
             } else {
                 // No user is signed in, show login screen
-                isAuthListenerInitialized = false; // Reset flag on logout
                 dom.authScreens.classList.remove('hidden');
                 dom.appScreen.classList.add('hidden');
                 toggleAuthView('login'); // Ensure login form is shown by default
