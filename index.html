@@ -671,14 +671,8 @@
 
             dom.recaptchaContainer.innerHTML = ''; // Clear previous content
 
-            // Ensure auth object is fully ready before creating RecaptchaVerifier
-            // This is the core of the fix for "appVerificationDisabledForTesting"
-            if (typeof auth.appVerificationDisabledForTesting === 'undefined') {
-                console.warn("Firebase Auth object's internal properties not yet available for RecaptchaVerifier. Deferring setup.");
-                // Try again after a short delay
-                setTimeout(setupRecaptchaVerifier, 200);
-                return;
-            }
+            // Removed the problematic check for auth.appVerificationDisabledForTesting
+            // The RecaptchaVerifier constructor should handle the auth object's internal readiness.
 
             // Use window.RecaptchaVerifier to access the class from the global scope
             recaptchaVerifierInstance = new window.RecaptchaVerifier(dom.recaptchaContainer, {
@@ -1510,12 +1504,10 @@
 
                         // Corrected: Check currentUserData.id
                         if (!currentUserData.id) {
-                            showModal('Employee ID Missing', 'Your employee ID is missing. Please contact Admin. Attendance will not be recorded.', async () => {
-                                await signOut(auth); // Log out if employee ID is missing
-                                if (dom.authScreens) dom.authScreens.classList.add('hidden');
-                                if (dom.appScreen) dom.appScreen.classList.add('hidden');
-                                toggleAuthView('login');
-                            });
+                            showModal('Employee ID Missing', 'Your employee ID is missing. Please contact Admin. Attendance will not be recorded.');
+                            dom.locationStatus.classList.add('error');
+                            dom.locationMessage.textContent = 'Employee ID missing.';
+                            dom.submitAttendanceBtn.disabled = true; // Disable submit if employee ID missing
                             return;
                         }
 
