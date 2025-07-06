@@ -581,7 +581,14 @@
             </div>
         </div>
     </div>
-
+<script>
+    // Define the global onloadCallback function for reCAPTCHA
+    function onloadCallback() {
+        console.log('reCAPTCHA script loaded successfully.');
+        // You might want to render your reCAPTCHA here if it was not 'invisible'
+        // For 'invisible' reCAPTCHA, it's often handled by RecaptchaVerifier directly
+    }
+</script>
     <script type="module">
         // Firebase Modular SDK v10+ imports
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js';
