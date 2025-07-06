@@ -680,7 +680,8 @@
                 return;
             }
 
-            recaptchaVerifierInstance = new RecaptchaVerifier(dom.recaptchaContainer, {
+            // Use window.RecaptchaVerifier to access the class from the global scope
+            recaptchaVerifierInstance = new window.RecaptchaVerifier(dom.recaptchaContainer, {
                 'size': 'invisible', // or 'normal' if you want a visible checkbox
                 'callback': (response) => {
                     console.log('reCAPTCHA solved:', response);
