@@ -364,8 +364,8 @@
             border-radius: 50%;
             background-color: white;
             position: absolute;
-            left: 50%;
             top: 50%;
+            left: 50%;
             transform: translate(-50%, -50%);
         }
 
@@ -821,6 +821,35 @@
         });
 
         /**
+         * Retries fetching user profile data from Realtime Database.
+         * @param {string} uid - The user's UID.
+         * @param {number} retries - Number of retries left.
+         * @param {number} delayMs - Delay in milliseconds between retries.
+         * @returns {Promise<Object|null>} User data or null if not found after retries.
+         */
+        async function fetchUserProfileWithRetry(uid, retries = 2, delayMs = 500) {
+            const userRef = ref(db, `users/${uid}`);
+            for (let i = 0; i <= retries; i++) {
+                try {
+                    const snapshot = await get(userRef);
+                    const userData = snapshot.val();
+                    if (userData) {
+                        console.log(`✅ User data fetched on attempt ${i + 1}:`, userData);
+                        return userData;
+                    }
+                } catch (error) {
+                    console.error(`Error fetching user data (attempt ${i + 1}):`, error);
+                }
+                if (i < retries) {
+                    console.log(`Retrying user data fetch in ${delayMs}ms...`);
+                    await new Promise(resolve => setTimeout(resolve, delayMs));
+                }
+            }
+            console.warn(`❌ User data not found after ${retries + 1} attempts for UID: ${uid}`);
+            return null;
+        }
+
+        /**
          * Handles user login with email and password.
          */
         dom.loginBtn.addEventListener('click', async () => {
@@ -838,15 +867,13 @@
                 const userCredential = await signInWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
 
-                // Fetch user data from Realtime Database
-                const userRef = ref(db, `users/${user.uid}`);
-                const snapshot = await get(userRef);
-                const fetchedUserData = snapshot.val(); // Store user data locally for checks
+                // Attempt to fetch user data with retry logic
+                const fetchedUserData = await fetchUserProfileWithRetry(user.uid);
 
                 if (!fetchedUserData) {
-                    // User data not found in DB
+                    // User data not found in DB after retries
                     await signOut(auth); // Log out immediately
-                    showModal('User Data Missing', 'Your user profile data is missing. Please contact Admin.', () => {
+                    showModal('User Data Missing', 'Your profile is not yet available. Please contact Admin.', () => {
                         toggleAuthView('login');
                     });
                     return;
@@ -1123,7 +1150,7 @@
                 }
             } catch (error) {
                 console.error('Signup error:', error);
-                // Only attempt to delete user if an auth user was created and the error is not 'email-already-in-use'
+                // Only attempt to delete user if an auth user was created and the error is not 'auth/email-already-in-use'
                 if (user && error.code !== 'auth/email-already-in-use') {
                     await deleteUser(user).catch(deleteError => console.error("Error deleting user:", deleteError));
                 }
@@ -1525,85 +1552,74 @@
 
 
         // Initial authentication state check
+        let isAuthListenerReady = false; // Flag to prevent duplicate execution
         onAuthStateChanged(auth, async (user) => {
-            console.log("🔥 UID during state check:", user?.uid);
+            console.log("🔥 onAuthStateChanged triggered. User:", user?.uid);
+
+            // Prevent duplicate execution if already handled or in process
+            if (isAuthListenerReady) {
+                console.log("Skipping onAuthStateChanged: Listener already processed.");
+                return;
+            }
 
             if (user) {
-                // User is signed in, fetch user data from Realtime Database
-                const userRef = ref(db, `users/${user.uid}`);
-                try {
-                    const snapshot = await get(userRef);
+                // User is signed in.
+                // Crucial: Check OTP verification status from sessionStorage
+                const otpVerified = sessionStorage.getItem('otpVerified');
 
-                    const userData = snapshot.val();
-                    console.log("📦 /users data fetched:", snapshot.val());
-                    // Log userData to inspect its structure
-                    console.log('User Data from DB in onAuthStateChanged:', userData);
-
-                    // Crucial: Check OTP verification status from sessionStorage
-                    const otpVerified = sessionStorage.getItem('otpVerified');
-
-                    if (!userData) {
-                        // User data not found in DB
-                        await signOut(auth);
-                        showModal('User Data Missing', 'Your user profile data is missing. Please contact Admin.', () => {
-                            toggleAuthView('login');
-                        });
-                        return;
-                    }
-
-                    if (userData.role !== 'employee') {
-                        // Not an employee
-                        await signOut(auth);
-                        showModal('Access Denied', 'You do not have employee access to this application.', () => {
-                            toggleAuthView('login');
-                        });
-                        return;
-                    }
-
-                    if (!userData.id || typeof userData.id !== 'string' || userData.id.trim() === "") {
-                        // Employee ID is missing or invalid
-                        await signOut(auth);
-                        showModal('Employee ID Missing', 'Your employee ID is missing or invalid. Please contact Admin. Attendance will not be recorded.', () => {
-                            toggleAuthView('login');
-                        });
-                        return;
-                    }
-
-                    currentUserData = userData; // Store current user data
-
-                    if (otpVerified === 'true') {
-                        // OTP already verified, proceed to app screen
-                        dom.authScreens.classList.add('hidden');
-                        dom.appScreen.classList.remove('hidden');
-                        dom.userDisplayName.textContent = `${userData.name} (${userData.email})`;
-                        checkUserLocationAndAttendance();
-                    } else {
-                        // User logged in but OTP not verified, redirect to OTP flow
-                        dom.authScreens.classList.remove('hidden');
-                        dom.appScreen.classList.add('hidden');
-                        // Check if phone exists and is a string before calling trim()
-                        if (typeof userData.phone === 'string' && userData.phone.trim() !== "") {
-                            phoneNumberToVerify = userData.phone; // Set phone for OTP sending
-                            toggleAuthView('phone-verify'); // Go to phone verification
-                            showModal('Verification Required', 'Please verify your phone number to access the app.');
-                        } else {
-                            // Phone number missing for an existing user or not a string
+                if (otpVerified === 'true') {
+                    // OTP already verified, proceed to app screen
+                    isAuthListenerReady = true; // Mark as processed
+                    dom.authScreens.classList.add('hidden');
+                    dom.appScreen.classList.remove('hidden');
+                    // Fetch currentUserData here if it's not already set from a successful login flow
+                    // This ensures currentUserData is available if user refreshes page while logged in and OTP verified.
+                    if (!currentUserData) {
+                        currentUserData = await fetchUserProfileWithRetry(user.uid);
+                        if (!currentUserData) {
+                            // If profile still can't be fetched, something is wrong. Log out.
                             await signOut(auth);
-                            showModal('Phone Not Found', 'Your registered phone number is missing or invalid. Please contact Admin.', () => {
+                            showModal('User Data Missing', 'Your user profile data could not be retrieved. Please contact Admin.', () => {
                                 toggleAuthView('login');
                             });
+                            return;
                         }
                     }
-                } catch (error) {
-                    console.error("Error fetching user role or during auth state check:", error);
-                    await signOut(auth); // Log out on error
+                    dom.userDisplayName.textContent = `${currentUserData.name} (${currentUserData.email})`;
+                    checkUserLocationAndAttendance();
+                } else {
+                    // User logged in but OTP not verified, redirect to OTP flow
+                    // No need to fetch user data here, as it should have been fetched during login.
+                    // If user refreshes on OTP screen, we need to ensure currentUserData is set.
+                    if (!currentUserData) {
+                        currentUserData = await fetchUserProfileWithRetry(user.uid);
+                        if (!currentUserData) {
+                            await signOut(auth);
+                            showModal('User Data Missing', 'Your user profile data could not be retrieved for OTP verification. Please contact Admin.', () => {
+                                toggleAuthView('login');
+                            });
+                            return;
+                        }
+                    }
+
                     dom.authScreens.classList.remove('hidden');
                     dom.appScreen.classList.add('hidden');
-                    showModal('Error', 'Failed to retrieve user data. Please try again.');
-                    toggleAuthView('login');
+                    // Check if phone exists and is a string before calling trim()
+                    if (typeof currentUserData.phone === 'string' && currentUserData.phone.trim() !== "") {
+                        phoneNumberToVerify = currentUserData.phone; // Set phone for OTP sending
+                        toggleAuthView('phone-verify'); // Go to phone verification
+                        showModal('Verification Required', 'Please verify your phone number to access the app.');
+                    } else {
+                        // Phone number missing for an existing user or not a string
+                        await signOut(auth);
+                        showModal('Phone Not Found', 'Your registered phone number is missing or invalid. Please contact Admin.', () => {
+                            toggleAuthView('login');
+                        });
+                    }
                 }
             } else {
                 // No user is signed in, show login screen
+                isAuthListenerReady = false; // Reset flag on logout
                 dom.authScreens.classList.remove('hidden');
                 dom.appScreen.classList.add('hidden');
                 toggleAuthView('login'); // Ensure login form is shown by default
