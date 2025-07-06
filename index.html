@@ -682,6 +682,7 @@
         let recaptchaVerifierInstance = null;
         let recaptchaWidgetId = null;
         let currentDeviceId = null; // Stores the unique device ID
+        let isUserDataSet = false; // New flag to track if user data has been successfully loaded
 
         // Attendance record to keep track of current state and locked fields
         let attendanceRecord = {
@@ -1252,6 +1253,9 @@
                 localStorage.removeItem('otpVerified'); // Changed to localStorage
                 localStorage.removeItem('app_device_id'); // Clear device ID on logout
                 currentDeviceId = null; // Reset in memory
+                // Reset these flags and data on logout
+                isUserDataSet = false;
+                currentUserData = null;
                 dom.authScreens.classList.remove('hidden');
                 dom.appScreen.classList.add('hidden');
                 dom.loginEmailInput.value = '';
@@ -1271,7 +1275,6 @@
                     anLocked: false
                 };
                 dom.submitAttendanceBtn.disabled = true;
-                currentUserData = null; // Clear current user data on logout
                 clearInterval(otpCountdownInterval); // Clear any active OTP countdown
                 dom.countdownTimer.textContent = ''; // Clear countdown display
                 dom.resendOtpBtn.disabled = false; // Enable resend button
@@ -1642,7 +1645,12 @@
             console.log("🔥 onAuthStateChanged triggered. User:", user?.uid);
 
             if (user) {
-                // User is signed in.
+                // If user data is already set and validated for this user, avoid re-processing
+                if (isUserDataSet && currentUserData && currentUserData.uid === user.uid) {
+                    console.log("User data already loaded for this session. Skipping redundant fetch.");
+                    return; // Exit early if already processed
+                }
+
                 const currentDeviceIdentifier = await getDeviceId(); // Get current device ID
 
                 // Use the new getUserDataWithRetry function
@@ -1655,11 +1663,14 @@
                     showModal('User Data Missing', 'Your user profile data could not be retrieved after multiple attempts. Please contact Admin.', () => {
                         toggleAuthView('login');
                     });
+                    isUserDataSet = false; // Reset flag
+                    currentUserData = null; // Ensure data is cleared
                     return; // Stop further processing
                 }
 
                 // If user data is successfully fetched, assign it to currentUserData
                 currentUserData = fetchedUserData;
+                isUserDataSet = true; // Mark data as successfully loaded
 
                 // Device ID validation: Check if stored deviceId matches current deviceId
                 if (currentUserData.deviceId && currentUserData.deviceId !== currentDeviceIdentifier) {
@@ -1667,6 +1678,8 @@
                     showModal('Device Mismatch', '❌ Attendance is not allowed from this device. Please contact Admin.', () => {
                         toggleAuthView('login');
                     });
+                    isUserDataSet = false; // Reset flag
+                    currentUserData = null; // Ensure data is cleared
                     return; // Stop further processing
                 }
 
@@ -1682,6 +1695,8 @@
                     showModal('Access Denied', 'You do not have employee access to this application.', () => {
                         toggleAuthView('login');
                     });
+                    isUserDataSet = false; // Reset flag
+                    currentUserData = null; // Ensure data is cleared
                     return;
                 }
 
@@ -1690,6 +1705,8 @@
                     showModal('Employee ID Missing', 'Your employee ID is missing or invalid. Please contact Admin. Attendance will not be recorded.', () => {
                         toggleAuthView('login');
                     });
+                    isUserDataSet = false; // Reset flag
+                    currentUserData = null; // Ensure data is cleared
                     return;
                 }
 
@@ -1698,6 +1715,8 @@
                     showModal('Phone Not Found', 'Your registered phone number is missing or invalid. Please contact Admin.', () => {
                         toggleAuthView('login');
                     });
+                    isUserDataSet = false; // Reset flag
+                    currentUserData = null; // Ensure data is cleared
                     return;
                 }
 
@@ -1721,6 +1740,8 @@
                 dom.authScreens.classList.remove('hidden');
                 dom.appScreen.classList.add('hidden');
                 toggleAuthView('login'); // Ensure login form is shown by default
+                isUserDataSet = false; // Reset flag on logout
+                currentUserData = null; // Clear current user data
             }
         });
 
