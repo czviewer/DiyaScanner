@@ -5,8 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diya-Hero Self-Attendance</title>
+    <!-- Font Awesome for icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts - Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Global box-sizing for consistent layout */
@@ -413,11 +416,14 @@
 </head>
 
 <body>
+    <!-- Main Application Wrapper -->
     <div id="app-wrapper" class="w-full flex justify-center items-center">
 
+        <!-- Authentication Screens (Login, Phone Verify, OTP, Signup) -->
         <div id="auth-screens" class="card">
             <h1 class="text-2xl sm:text-3xl font-bold text-blue-800 text-center mb-4">Diya-Hero Self-Attendance</h1>
 
+            <!-- Login Form -->
             <div id="login-form" class="space-y-5">
                 <div class="form-group">
                     <label for="login-email" class="block text-gray-700 text-sm font-semibold mb-2">Email</label>
@@ -436,6 +442,7 @@
                 </button>
             </div>
 
+            <!-- Phone Verification Form -->
             <div id="phone-verify-form" class="space-y-5 hidden">
                 <p class="text-lg text-gray-700 text-center">Please enter the last 4 digits of your registered phone
                     number.</p>
@@ -454,6 +461,7 @@
                 </button>
             </div>
 
+            <!-- OTP Verification Form -->
             <div id="otp-form" class="space-y-5 hidden">
                 <p class="text-lg text-gray-700 text-center">An OTP has been sent to your registered phone number.</p>
                 <div class="form-group">
@@ -471,6 +479,7 @@
                 <div id="recaptcha-container" class="mt-4"></div>
             </div>
 
+            <!-- Signup Form -->
             <div id="signup-form" class="space-y-5 hidden">
                 <div class="form-group">
                     <label for="signup-name" class="block text-gray-700 text-sm font-semibold mb-2">Name</label>
@@ -504,6 +513,7 @@
             </div>
         </div>
 
+        <!-- Main App Screen -->
         <div id="app-screen" class="card app-screen-card hidden">
             <div class="app-header">
                 <h2 class="text-xl sm:text-2xl font-bold text-blue-800">Diya-Hero Self-Attendance</h2>
@@ -550,6 +560,7 @@
         </div>
     </div>
 
+    <!-- Modal for messages -->
     <div id="message-modal-overlay" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -587,9 +598,7 @@
             RecaptchaVerifier,
             signInWithPhoneNumber,
             setPersistence,
-            browserLocalPersistence,
-            PhoneAuthProvider,
-            linkWithCredential
+            browserLocalPersistence
         } from 'https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js';
         import {
             getDatabase,
@@ -797,7 +806,7 @@
                 dom.recaptchaContainer.innerHTML = '';
             }
 
-            recaptchaVerifierInstance = new RecaptchaVerifier(auth, dom.recaptchaContainer, {
+            recaptchaVerifierInstance = new RecaptchaVerifier(dom.recaptchaContainer, {
                 'size': 'invisible', // or 'normal' if you want a visible checkbox
                 'callback': (response) => {
                     // reCAPTCHA solved, this is not needed for invisible reCAPTCHA if auto-executed
@@ -811,7 +820,7 @@
                         grecaptcha.reset(recaptchaWidgetId);
                     }
                 }
-            });
+            }, auth);
 
             // Render the reCAPTCHA and get its widget ID
             recaptchaVerifierInstance.render().then(function(widgetId) {
@@ -888,7 +897,7 @@
                     const position = await new Promise((resolve, reject) => {
                         navigator.geolocation.getCurrentPosition(resolve, reject, {
                             enableHighAccuracy: true,
-                            timeout: 30000, // Increased timeout to 30 seconds
+                            timeout: 10000,
                             maximumAge: 0
                         });
                     });
@@ -906,17 +915,6 @@
                         const branchData = branchSnapshot.val();
                         const branchLatitude = branchData.latitude;
                         const branchLongitude = branchData.longitude;
-
-                        // Validate that branch coordinates from the database are valid numbers
-                        if (typeof branchLatitude !== 'number' || typeof branchLongitude !== 'number') {
-                            dom.locationStatus.classList.remove('verified');
-                            dom.locationStatus.classList.add('error');
-                            dom.locationMessage.textContent = `Branch location data is invalid for ${currentUserData.branch}. Contact Admin.`;
-                            dom.attendanceSection.classList.add('hidden');
-                            dom.submitAttendanceBtn.disabled = true;
-                            return; // Stop further execution
-                        }
-                        
                         const radius = branchData.radius || 100; // Default to 100 meters if not set
 
                         const distance = calculateDistance(latitude, longitude, branchLatitude, branchLongitude);
@@ -1271,9 +1269,9 @@
             }
         }
 
+
         async function handleOtpVerification() {
             const otp = dom.otpInput.value;
-            const originalUser = auth.currentUser; // Get the user who is ALREADY logged in
 
             if (!otp || otp.length !== 6) {
                 showMessage(dom.otpMessage, 'Please enter the 6-digit OTP.', 'error');
@@ -1281,14 +1279,7 @@
             }
 
             if (!confirmationResult) {
-                showMessage(dom.otpMessage, 'No OTP request initiated. Please go back and verify your phone.', 'error');
-                return;
-            }
-
-            if (!originalUser) {
-                showModal('Authentication Error', 'You are not signed in. Please log in again.', () => {
-                    toggleAuthView('login');
-                });
+                showMessage(dom.otpMessage, 'No OTP request initiated. Please go back and verify phone.', 'error');
                 return;
             }
 
@@ -1296,31 +1287,26 @@
             dom.verifyOtpBtn.disabled = true;
 
             try {
-                // Create a credential with the OTP
-                const credential = PhoneAuthProvider.credential(confirmationResult.verificationId, otp);
-                
-                // Link the credential to the existing user
-                await linkWithCredential(originalUser, credential);
-
-                // Now that linking is successful, update the user's profile in the database
-                await update(ref(db, 'users/' + originalUser.uid), {
-                    isVerified: true
-                });
-                currentUserData.isVerified = true; // Update local state
+                await confirmationResult.confirm(otp);
+                // OTP verified, update user's isVerified status in DB
+                if (auth.currentUser) {
+                    await update(ref(db, 'users/' + auth.currentUser.uid), {
+                        isVerified: true
+                    });
+                    currentUserData.isVerified = true; // Update local state
+                }
 
                 showMessage(dom.otpMessage, 'Phone number verified successfully!', 'success');
                 showModal('Verification Success', 'Your phone number has been verified. Welcome!');
-
-                // Transition to the main app screen
+                // Automatically transition to app screen after successful verification
                 dom.authScreens.classList.add('hidden');
                 dom.appScreen.classList.remove('hidden');
-                checkUserLocationAndAttendance();
-
+                checkUserLocationAndAttendance(); // Check location after successful login/verification
             } catch (error) {
-                console.error("OTP verification/linking error:", error);
+                console.error("OTP verification error:", error);
                 let errorMessage = "OTP verification failed. Please try again.";
-                if (error.code === 'auth/invalid-verification-code' || error.code === 'auth/credential-already-in-use') {
-                    errorMessage = "Invalid OTP or this phone number is already linked to another account.";
+                if (error.code === 'auth/invalid-verification-code') {
+                    errorMessage = "Invalid OTP. Please check and try again.";
                 } else if (error.code === 'auth/code-expired') {
                     errorMessage = "OTP expired. Please resend.";
                     dom.resendOtpBtn.disabled = false;
@@ -1330,7 +1316,6 @@
                 dom.verifyOtpBtn.disabled = false;
             }
         }
-
 
         async function handleResendOtp() {
             if (!phoneNumberToVerify) {
@@ -1386,7 +1371,6 @@
                 return;
             }
 
-            // This check prevents the flicker/reload when the phone credential linking happens
             if (user && user.uid === lastProcessedUID && isAuthListenerInitialized) {
                 console.log("Auth state for this user already processed. Skipping.");
                 return;
@@ -1411,13 +1395,20 @@
                         if (currentUserData.role !== 'employee') {
                             showModal('Access Denied', 'You do not have employee access to this application.', async () => {
                                 await signOut(auth); // Log out non-employees
+                                dom.authScreens.classList.remove('hidden');
+                                dom.appScreen.classList.add('hidden');
+                                toggleAuthView('login');
                             });
                             return; // Stop further processing for non-employees
                         }
 
+                        // Corrected: Check currentUserData.id
                         if (!currentUserData.id) {
                             showModal('Employee ID Missing', 'Your employee ID is missing. Please contact Admin. Attendance will not be recorded.', async () => {
                                 await signOut(auth); // Log out if employee ID is missing
+                                dom.authScreens.classList.remove('hidden');
+                                dom.appScreen.classList.add('hidden');
+                                toggleAuthView('login');
                             });
                             return;
                         }
@@ -1425,6 +1416,9 @@
                         if (!currentUserData.phone) {
                             showModal('Phone Not Found', 'Your registered phone number is missing or invalid. Please contact Admin.', async () => {
                                 await signOut(auth);
+                                dom.authScreens.classList.remove('hidden');
+                                dom.appScreen.classList.add('hidden');
+                                toggleAuthView('login');
                             });
                             return;
                         }
@@ -1436,6 +1430,9 @@
                             if (!isBound) {
                                 showModal('Device Not Recognized', 'This device is not registered. Please contact Admin.', async () => {
                                     await signOut(auth);
+                                    dom.authScreens.classList.remove('hidden');
+                                    dom.appScreen.classList.add('hidden');
+                                    toggleAuthView('login');
                                 });
                                 return;
                             }
@@ -1454,14 +1451,14 @@
                             showModal('Verification Required', 'Please verify your phone number to access the app.');
                         }
                     } else {
-                        // User exists in Auth but not in Realtime DB (should not happen with proper signup/linking flow)
+                        // User exists in Auth but not in Realtime DB (should not happen with proper signup flow)
                         console.warn("User data not found in DB for UID:", user.uid);
                         showModal('User Data Missing', 'Your user profile is incomplete. Please contact Admin.', async () => {
-                            // Clean up incomplete user from Auth, but check if it's not an anonymous user from phone auth
-                             if (user.isAnonymous) {
-                                await deleteUser(user);
-                            }
+                            await deleteUser(user); // Clean up incomplete user
                             await signOut(auth);
+                            dom.authScreens.classList.remove('hidden');
+                            dom.appScreen.classList.add('hidden');
+                            toggleAuthView('login');
                         });
                     }
                 } else {
@@ -1518,6 +1515,8 @@
             setInterval(updateFormDisablementBasedOnTime, 60000); // Check every minute
         });
     </script>
+    <!-- Google reCAPTCHA API script -->
+    <!-- The onloadCallback is implicitly called by the reCAPTCHA script once it's loaded -->
     <script src="https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit" async defer></script>
 </body>
 
