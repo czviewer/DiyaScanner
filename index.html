@@ -999,13 +999,15 @@
 
             // Attendance is only open Monday to Saturday (1-6)
             if (currentDay === 0) { // Sunday
+                // Allow submission on Sunday, but disable regular morning/afternoon checkboxes
                 if (dom.morningCheck) dom.morningCheck.disabled = true;
                 if (dom.anEnters) dom.anEnters.disabled = true;
                 if (dom.anLeaves) dom.anLeaves.disabled = true;
                 if (dom.anNone) dom.anNone.disabled = true;
-                if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
-                showMessage(dom.attendanceMessage, "Attendance is closed on Sundays.", 'error');
-                return;
+                // The submit button's state will be determined by location verification
+                // and the presence of any attendance data (morning/afternoon) which can be set on Sunday
+                // The message "Attendance is closed on Sundays." will be removed if location is verified.
+                // showMessage(dom.attendanceMessage, "Attendance is closed on Sundays.", 'error');
             } else {
                 hideMessage(dom.attendanceMessage);
             }
@@ -1051,6 +1053,12 @@
             if (dom.locationStatus && !dom.locationStatus.classList.contains('verified')) {
                 if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
             }
+            // If it's Sunday, and location is verified, enable submit button.
+            // The logic for Sunday attendance submission will be handled in submitAttendance.
+            if (currentDay === 0 && dom.locationStatus && dom.locationStatus.classList.contains('verified')) {
+                if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = false;
+                showMessage(dom.attendanceMessage, "It's Sunday. You can mark your attendance for Sunday work.", 'success');
+            }
         }
 
 
@@ -1073,6 +1081,12 @@
 
             const now = new Date();
             const currentHour = now.getHours();
+            const isSunday = now.getDay() === 0; // 0 for Sunday
+
+            // Add sundayWork tag if it's Sunday
+            if (isSunday) {
+                updates.sundayWork = true;
+            }
 
             try {
                 const snapshot = await get(attendanceRef);
@@ -1085,7 +1099,7 @@
                             return;
                         }
                         updates.morning = now.toISOString();
-                    } else {
+                    } else if (!isSunday) { // Only require morning check if not Sunday
                         showModal('Action Required', 'Please check the morning attendance box to submit.');
                         return;
                     }
@@ -1096,12 +1110,28 @@
                             return;
                         }
                         updates.afternoon = afternoonStatus;
-                    } else {
+                    } else if (!isSunday) { // Only require afternoon status if not Sunday
                         showModal('Action Required', 'Please select an afternoon status (Enters/Leaves/None) to submit.');
                         return;
                     }
-                } else {
-                    showModal('Time Closed', 'Attendance can only be submitted between 7 AM - 3 PM.');
+                } else if (!isSunday) { // Attendance closed for regular days
+                    showModal('Time Closed', 'Attendance can only be submitted between 7 AM - 3 PM on weekdays.');
+                    return;
+                }
+
+                // If it's Sunday, and no morning/afternoon status is explicitly selected,
+                // we still allow submission if sundayWork is true.
+                // This allows for "Sunday work" to be recorded without specific morning/afternoon times.
+                if (isSunday && !updates.morning && !updates.afternoon && !existingData) {
+                    // If no morning/afternoon data yet for Sunday, set a generic Sunday attendance timestamp
+                    // This prevents an empty attendance record if only sundayWork is true.
+                    updates.sundayAttendanceTimestamp = now.toISOString();
+                }
+
+
+                // Prevent submitting empty updates if nothing changed or no valid time slot
+                if (Object.keys(updates).length === 0) {
+                    showModal('No Changes', 'No attendance data to submit for the current time slot.');
                     return;
                 }
 
