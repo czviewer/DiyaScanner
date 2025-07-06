@@ -827,7 +827,7 @@
          * @param {number} delayMs - Delay in milliseconds between retries.
          * @returns {Promise<Object|null>} User data or null if not found after retries.
          */
-        async function fetchUserProfileWithRetry(uid, retries = 2, delayMs = 500) {
+        async function fetchUserProfileWithRetry(uid, retries = 5, delayMs = 1000) { // Increased retries and delay
             const userRef = ref(db, `users/${uid}`);
             for (let i = 0; i <= retries; i++) {
                 try {
