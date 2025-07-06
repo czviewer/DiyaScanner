@@ -5,11 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diya-Hero Self-Attendance</title>
-    <!-- Font Awesome for icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <!-- Google Fonts - Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Global box-sizing for consistent layout */
@@ -416,14 +413,11 @@
 </head>
 
 <body>
-    <!-- Main Application Wrapper -->
     <div id="app-wrapper" class="w-full flex justify-center items-center">
 
-        <!-- Authentication Screens (Login, Phone Verify, OTP, Signup) -->
         <div id="auth-screens" class="card">
             <h1 class="text-2xl sm:text-3xl font-bold text-blue-800 text-center mb-4">Diya-Hero Self-Attendance</h1>
 
-            <!-- Login Form -->
             <div id="login-form" class="space-y-5">
                 <div class="form-group">
                     <label for="login-email" class="block text-gray-700 text-sm font-semibold mb-2">Email</label>
@@ -442,7 +436,6 @@
                 </button>
             </div>
 
-            <!-- Phone Verification Form -->
             <div id="phone-verify-form" class="space-y-5 hidden">
                 <p class="text-lg text-gray-700 text-center">Please enter the last 4 digits of your registered phone
                     number.</p>
@@ -461,7 +454,6 @@
                 </button>
             </div>
 
-            <!-- OTP Verification Form -->
             <div id="otp-form" class="space-y-5 hidden">
                 <p class="text-lg text-gray-700 text-center">An OTP has been sent to your registered phone number.</p>
                 <div class="form-group">
@@ -479,7 +471,6 @@
                 <div id="recaptcha-container" class="mt-4"></div>
             </div>
 
-            <!-- Signup Form -->
             <div id="signup-form" class="space-y-5 hidden">
                 <div class="form-group">
                     <label for="signup-name" class="block text-gray-700 text-sm font-semibold mb-2">Name</label>
@@ -513,7 +504,6 @@
             </div>
         </div>
 
-        <!-- Main App Screen -->
         <div id="app-screen" class="card app-screen-card hidden">
             <div class="app-header">
                 <h2 class="text-xl sm:text-2xl font-bold text-blue-800">Diya-Hero Self-Attendance</h2>
@@ -560,7 +550,6 @@
         </div>
     </div>
 
-    <!-- Modal for messages -->
     <div id="message-modal-overlay" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -806,7 +795,7 @@
                 dom.recaptchaContainer.innerHTML = '';
             }
 
-            recaptchaVerifierInstance = new RecaptchaVerifier(dom.recaptchaContainer, {
+            recaptchaVerifierInstance = new RecaptchaVerifier(auth, dom.recaptchaContainer, {
                 'size': 'invisible', // or 'normal' if you want a visible checkbox
                 'callback': (response) => {
                     // reCAPTCHA solved, this is not needed for invisible reCAPTCHA if auto-executed
@@ -820,7 +809,7 @@
                         grecaptcha.reset(recaptchaWidgetId);
                     }
                 }
-            }, auth);
+            });
 
             // Render the reCAPTCHA and get its widget ID
             recaptchaVerifierInstance.render().then(function(widgetId) {
@@ -1515,8 +1504,6 @@
             setInterval(updateFormDisablementBasedOnTime, 60000); // Check every minute
         });
     </script>
-    <!-- Google reCAPTCHA API script -->
-    <!-- The onloadCallback is implicitly called by the reCAPTCHA script once it's loaded -->
     <script src="https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit" async defer></script>
 </body>
 
