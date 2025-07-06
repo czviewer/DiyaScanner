@@ -891,9 +891,10 @@
          * Retries fetching user profile data from Realtime Database.
          * @param {string} uid - The user's UID.
          * @param {number} retries - Maximum number of retries.
+         * @param {number} delayMs - Delay in milliseconds between retries.
          * @returns {Promise<Object|null>} User data or null if not found after retries.
          */
-        async function getUserDataWithRetry(uid, retries = 3) {
+        async function getUserDataWithRetry(uid, retries = 3, delayMs = 500) {
             const userRef = ref(db, `users/${uid}`);
             for (let i = 0; i < retries; i++) {
                 try {
@@ -905,8 +906,8 @@
                     console.error(`Error fetching user data (attempt ${i + 1}):`, error);
                 }
                 if (i < retries - 1) { // Don't delay after the last attempt
-                    console.log(`Retrying user data fetch in 500ms (attempt ${i + 1}/${retries})...`);
-                    await new Promise(resolve => setTimeout(resolve, 500)); // Use 500ms delay as requested
+                    console.log(`Retrying user data fetch in ${delayMs}ms (attempt ${i + 1}/${retries})...`);
+                    await new Promise(resolve => setTimeout(resolve, delayMs));
                 }
             }
             console.warn(`❌ User data not found after ${retries} attempts for UID: ${uid}`);
@@ -932,12 +933,12 @@
                 const user = userCredential.user;
 
                 // Attempt to fetch user data with retry logic
-                const fetchedUserData = await getUserDataWithRetry(user.uid, 5); // Increased retries to 5 for login button
+                const fetchedUserData = await getUserDataWithRetry(user.uid, 10, 1000); // Increased retries to 10, delay to 1000ms
 
                 if (!fetchedUserData) {
                     // User data not found in DB after retries
                     await signOut(auth); // Log out immediately
-                    showModal('User Data Missing', 'Your profile is not yet available. Please contact Admin.', () => {
+                    showModal('User Data Missing', 'Your profile data could not be retrieved after multiple attempts. Please contact Admin.', () => {
                         toggleAuthView('login');
                     });
                     return;
@@ -1645,13 +1646,13 @@
                 const currentDeviceIdentifier = await getDeviceId(); // Get current device ID
 
                 // Use the new getUserDataWithRetry function
-                const fetchedUserData = await getUserDataWithRetry(user.uid, 5); // Increased retries to 5
+                const fetchedUserData = await getUserDataWithRetry(user.uid, 10, 1000); // Increased retries to 10, delay to 1000ms
 
                 if (!fetchedUserData) {
                     // User data not found in DB after all retries.
                     // This indicates a critical issue with the user's profile data.
                     await signOut(auth); // Log out immediately
-                    showModal('User Data Missing', 'Your user profile data could not be retrieved. Please contact Admin.', () => {
+                    showModal('User Data Missing', 'Your user profile data could not be retrieved after multiple attempts. Please contact Admin.', () => {
                         toggleAuthView('login');
                     });
                     return; // Stop further processing
