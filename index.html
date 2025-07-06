@@ -792,8 +792,17 @@
             }
 
             // Ensure the container is empty before rendering
-            if (dom.recaptchaContainer) {
-                dom.recaptchaContainer.innerHTML = '';
+            if (!dom.recaptchaContainer) {
+                console.error("reCAPTCHA container not found.");
+                return;
+            }
+            dom.recaptchaContainer.innerHTML = '';
+
+            // CRITICAL FIX: Ensure 'auth' object is available before creating RecaptchaVerifier
+            if (!auth) {
+                console.error("Firebase Auth object is undefined when trying to render reCAPTCHA.");
+                showModal('reCAPTCHA Error', 'Firebase authentication not initialized. Please try again.');
+                return;
             }
 
             recaptchaVerifierInstance = new RecaptchaVerifier(dom.recaptchaContainer, {
@@ -1026,7 +1035,7 @@
                 if (dom.anLeaves) dom.anLeaves.disabled = true;
                 if (dom.anNone) dom.anNone.disabled = true;
                 // Only enable submit if location is verified AND morning check is true
-                dom.submitAttendanceBtn.disabled = !(dom.locationStatus?.classList.contains('verified') && morningChecked);
+                dom.submitAttendanceBtn.disabled = !(dom.locationStatus?.classList.Contains('verified') && morningChecked);
             }
             // Afternoon attendance: 12 PM (noon) to 3 PM
             else if (currentHour >= 12 && currentHour < 15) {
@@ -1035,7 +1044,7 @@
                 if (dom.anLeaves) dom.anLeaves.disabled = false;
                 if (dom.anNone) dom.anNone.disabled = false;
                 // Only enable submit if location is verified AND afternoon status is selected
-                dom.submitAttendanceBtn.disabled = !(dom.locationStatus?.classList.contains('verified') && afternoonStatusSelected);
+                dom.submitAttendanceBtn.disabled = !(dom.locationStatus?.classList.Contains('verified') && afternoonStatusSelected);
             }
             // After 3 PM or before 7 AM
             else {
@@ -1048,7 +1057,7 @@
             }
 
             // Always disable submit if location not verified
-            if (dom.locationStatus && !dom.locationStatus.classList.contains('verified')) {
+            if (dom.locationStatus && !dom.locationStatus.classList.Contains('verified')) {
                 if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
                 // Ensure to override the message if location is not verified, even on Sunday or within time
                 if (currentDay !== 0 || !(currentHour >= 7 && currentHour < 15)) { // Don't override the "closed for the day" message unless it's a valid time slot.
@@ -1060,7 +1069,7 @@
 
         async function submitAttendance() {
             // Corrected: Check currentUserData.id
-            if (!currentUserData || !currentUserData.id || !dom.locationStatus.classList.contains('verified')) {
+            if (!currentUserData || !currentUserData.id || !dom.locationStatus.classList.Contains('verified')) {
                 showModal('Submission Error', 'Cannot submit attendance. Ensure you are logged in and location is verified.');
                 return;
             }
@@ -1439,7 +1448,7 @@
                         if (currentUserData.role !== 'employee') {
                             showModal('Access Denied', 'You do not have employee access to this application.', async () => {
                                 await signOut(auth); // Log out non-employees
-                                dom.authScreens.classList.remove('hidden');
+                                dom.authScreens.classList.add('hidden');
                                 dom.appScreen.classList.add('hidden');
                                 toggleAuthView('login');
                             });
@@ -1450,7 +1459,7 @@
                         if (!currentUserData.id) {
                             showModal('Employee ID Missing', 'Your employee ID is missing. Please contact Admin. Attendance will not be recorded.', async () => {
                                 await signOut(auth); // Log out if employee ID is missing
-                                dom.authScreens.classList.remove('hidden');
+                                dom.authScreens.classList.add('hidden');
                                 dom.appScreen.classList.add('hidden');
                                 toggleAuthView('login');
                             });
@@ -1460,7 +1469,7 @@
                         if (!currentUserData.phone) {
                             showModal('Phone Not Found', 'Your registered phone number is missing or invalid. Please contact Admin.', async () => {
                                 await signOut(auth);
-                                dom.authScreens.classList.remove('hidden');
+                                dom.authScreens.classList.add('hidden');
                                 dom.appScreen.classList.add('hidden');
                                 toggleAuthView('login');
                             });
