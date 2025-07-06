@@ -529,7 +529,8 @@
             </div>
             <div id="attendance-section" class="space-y-6 hidden">
                 <div class="form-group">
-                    <label for="morning-check" class="flex items-center text-lg font-semibold text-gray-700 cursor-pointer">
+                    <label for="morning-check"
+                        class="flex items-center text-lg font-semibold text-gray-700 cursor-pointer">
                         <input type="checkbox" id="morning-check"> Morning Attendance
                     </label>
                 </div>
@@ -577,7 +578,7 @@
     </div>
     <script>
         // Define the global onloadCallback function for reCAPTCHA
-        window.onloadCallback = function() {
+        window.onloadCallback = function () {
             console.log('reCAPTCHA script loaded successfully.');
             // This function can be used to explicitly render a reCAPTCHA widget if needed,
             // but for 'invisible' reCAPTCHA, it's often handled by RecaptchaVerifier directly.
@@ -823,7 +824,7 @@
             }, auth);
 
             // Render the reCAPTCHA and get its widget ID
-            recaptchaVerifierInstance.render().then(function(widgetId) {
+            recaptchaVerifierInstance.render().then(function (widgetId) {
                 recaptchaWidgetId = widgetId;
                 console.log('reCAPTCHA widget rendered with ID:', recaptchaWidgetId);
             }).catch(error => {
@@ -997,20 +998,30 @@
             const currentHour = now.getHours();
             const currentDay = now.getDay(); // 0 for Sunday, 1 for Monday, ..., 6 for Saturday
 
-            // Attendance is only open Monday to Saturday (1-6)
-            if (currentDay === 0) { // Sunday
-                // Allow submission on Sunday, but disable regular morning/afternoon checkboxes
-                if (dom.morningCheck) dom.morningCheck.disabled = true;
-                if (dom.anEnters) dom.anEnters.disabled = true;
-                if (dom.anLeaves) dom.anLeaves.disabled = true;
-                if (dom.anNone) dom.anNone.disabled = true;
-                // The submit button's state will be determined by location verification
-                // and the presence of any attendance data (morning/afternoon) which can be set on Sunday
-                // The message "Attendance is closed on Sundays." will be removed if location is verified.
-                // showMessage(dom.attendanceMessage, "Attendance is closed on Sundays.", 'error');
-            } else {
+            // Sunday logic: Allow attendance marking for extra work
+            if (currentDay === 0) {
                 hideMessage(dom.attendanceMessage);
+
+                if (dom.morningCheck) dom.morningCheck.disabled = false;
+                if (dom.anEnters) dom.anEnters.disabled = false;
+                if (dom.anLeaves) dom.anLeaves.disabled = false;
+                if (dom.anNone) dom.anNone.disabled = false;
+
+                const morningChecked = dom.morningCheck?.checked;
+                const afternoonSelected = dom.anEnters?.checked || dom.anLeaves?.checked || dom.anNone?.checked;
+
+                if (dom.submitAttendanceBtn) {
+                    dom.submitAttendanceBtn.disabled = !(morningChecked || afternoonSelected);
+                }
+
+                if (dom.locationStatus?.classList.contains('verified')) {
+                    showMessage(dom.attendanceMessage, "It's Sunday. You can mark your attendance for Sunday work.", 'success');
+                }
+                return;
             }
+
+            // Weekday logic
+            hideMessage(dom.attendanceMessage);
 
             let morningChecked = dom.morningCheck ? dom.morningCheck.checked : false;
             let afternoonStatusSelected = (dom.anEnters ? dom.anEnters.checked : false) || (dom.anLeaves ? dom.anLeaves.checked : false) || (dom.anNone ? dom.anNone.checked : false);
@@ -1021,26 +1032,18 @@
                 if (dom.anEnters) dom.anEnters.disabled = true;
                 if (dom.anLeaves) dom.anLeaves.disabled = true;
                 if (dom.anNone) dom.anNone.disabled = true;
-                if (!morningChecked) {
-                    if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true; // Must check morning
-                } else {
-                    if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = false;
-                }
+                dom.submitAttendanceBtn.disabled = !morningChecked;
             }
             // Afternoon attendance: 12 PM (noon) to 3 PM
             else if (currentHour >= 12 && currentHour < 15) {
-                if (dom.morningCheck) dom.morningCheck.disabled = true; // Morning is closed
+                if (dom.morningCheck) dom.morningCheck.disabled = true;
                 if (dom.anEnters) dom.anEnters.disabled = false;
                 if (dom.anLeaves) dom.anLeaves.disabled = false;
                 if (dom.anNone) dom.anNone.disabled = false;
-                if (!afternoonStatusSelected) {
-                    if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true; // Must select afternoon status
-                } else {
-                    if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = false;
-                }
+                dom.submitAttendanceBtn.disabled = !afternoonStatusSelected;
             }
-            // After 3 PM: All attendance closed for the day
-            else if (currentHour >= 15 || currentHour < 7) {
+            // After 3 PM or before 7 AM
+            else {
                 if (dom.morningCheck) dom.morningCheck.disabled = true;
                 if (dom.anEnters) dom.anEnters.disabled = true;
                 if (dom.anLeaves) dom.anLeaves.disabled = true;
@@ -1052,12 +1055,6 @@
             // Always disable submit if location not verified
             if (dom.locationStatus && !dom.locationStatus.classList.contains('verified')) {
                 if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
-            }
-            // If it's Sunday, and location is verified, enable submit button.
-            // The logic for Sunday attendance submission will be handled in submitAttendance.
-            if (currentDay === 0 && dom.locationStatus && dom.locationStatus.classList.contains('verified')) {
-                if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = false;
-                showMessage(dom.attendanceMessage, "It's Sunday. You can mark your attendance for Sunday work.", 'success');
             }
         }
 
@@ -1077,7 +1074,7 @@
             let isMorningChecked = dom.morningCheck.checked;
             let afternoonStatus = dom.anEnters.checked ? 'Enters' :
                 dom.anLeaves.checked ? 'Leaves' :
-                dom.anNone.checked ? 'None' : null;
+                    dom.anNone.checked ? 'None' : null;
 
             const now = new Date();
             const currentHour = now.getHours();
@@ -1133,6 +1130,11 @@
                 if (Object.keys(updates).length === 0) {
                     showModal('No Changes', 'No attendance data to submit for the current time slot.');
                     return;
+                }
+                // Mark Sunday work if today is Sunday
+                const isSunday = now.getDay() === 0;
+                if (isSunday) {
+                    updates.sundayWork = true;
                 }
 
                 await update(attendanceRef, updates); // Use update to merge, or set to overwrite
