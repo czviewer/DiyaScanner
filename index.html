@@ -1552,74 +1552,71 @@
 
 
         // Initial authentication state check
-        let isAuthListenerReady = false; // Flag to prevent duplicate execution
+        let isAuthListenerInitialized = false; // Flag to ensure the listener logic runs only once per session
         onAuthStateChanged(auth, async (user) => {
             console.log("🔥 onAuthStateChanged triggered. User:", user?.uid);
 
-            // Prevent duplicate execution if already handled or in process
-            if (isAuthListenerReady) {
-                console.log("Skipping onAuthStateChanged: Listener already processed.");
-                return;
-            }
-
             if (user) {
                 // User is signed in.
-                // Crucial: Check OTP verification status from sessionStorage
+                // Attempt to fetch user data with retry logic, regardless of previous state
+                const fetchedUserData = await fetchUserProfileWithRetry(user.uid);
+
+                if (!fetchedUserData) {
+                    // User data not found in DB after retries, even though auth user exists.
+                    // This indicates a problem with the user's profile data or DB connectivity.
+                    await signOut(auth); // Log out immediately
+                    showModal('User Data Missing', 'Your user profile data could not be retrieved. Please contact Admin.', () => {
+                        toggleAuthView('login');
+                    });
+                    return; // Stop further processing
+                }
+
+                // If user data is successfully fetched, assign it to currentUserData
+                currentUserData = fetchedUserData;
+
+                // Now perform all necessary checks on the confirmed currentUserData
+                if (currentUserData.role !== 'employee') {
+                    await signOut(auth);
+                    showModal('Access Denied', 'You do not have employee access to this application.', () => {
+                        toggleAuthView('login');
+                    });
+                    return;
+                }
+
+                if (!currentUserData.id || typeof currentUserData.id !== 'string' || currentUserData.id.trim() === "") {
+                    await signOut(auth);
+                    showModal('Employee ID Missing', 'Your employee ID is missing or invalid. Please contact Admin. Attendance will not be recorded.', () => {
+                        toggleAuthView('login');
+                    });
+                    return;
+                }
+
+                if (typeof currentUserData.phone !== 'string' || currentUserData.phone.trim() === "") {
+                    await signOut(auth);
+                    showModal('Phone Not Found', 'Your registered phone number is missing or invalid. Please contact Admin.', () => {
+                        toggleAuthView('login');
+                    });
+                    return;
+                }
+
+                // All checks passed. Now determine if OTP verification is needed.
                 const otpVerified = sessionStorage.getItem('otpVerified');
 
                 if (otpVerified === 'true') {
                     // OTP already verified, proceed to app screen
-                    isAuthListenerReady = true; // Mark as processed
                     dom.authScreens.classList.add('hidden');
                     dom.appScreen.classList.remove('hidden');
-                    // Fetch currentUserData here if it's not already set from a successful login flow
-                    // This ensures currentUserData is available if user refreshes page while logged in and OTP verified.
-                    if (!currentUserData) {
-                        currentUserData = await fetchUserProfileWithRetry(user.uid);
-                        if (!currentUserData) {
-                            // If profile still can't be fetched, something is wrong. Log out.
-                            await signOut(auth);
-                            showModal('User Data Missing', 'Your user profile data could not be retrieved. Please contact Admin.', () => {
-                                toggleAuthView('login');
-                            });
-                            return;
-                        }
-                    }
                     dom.userDisplayName.textContent = `${currentUserData.name} (${currentUserData.email})`;
                     checkUserLocationAndAttendance();
                 } else {
                     // User logged in but OTP not verified, redirect to OTP flow
-                    // No need to fetch user data here, as it should have been fetched during login.
-                    // If user refreshes on OTP screen, we need to ensure currentUserData is set.
-                    if (!currentUserData) {
-                        currentUserData = await fetchUserProfileWithRetry(user.uid);
-                        if (!currentUserData) {
-                            await signOut(auth);
-                            showModal('User Data Missing', 'Your user profile data could not be retrieved for OTP verification. Please contact Admin.', () => {
-                                toggleAuthView('login');
-                            });
-                            return;
-                        }
-                    }
-
-                    dom.authScreens.classList.remove('hidden');
-                    dom.appScreen.classList.add('hidden');
-                    // Check if phone exists and is a string before calling trim()
-                    if (typeof currentUserData.phone === 'string' && currentUserData.phone.trim() !== "") {
-                        phoneNumberToVerify = currentUserData.phone; // Set phone for OTP sending
-                        toggleAuthView('phone-verify'); // Go to phone verification
-                        showModal('Verification Required', 'Please verify your phone number to access the app.');
-                    } else {
-                        // Phone number missing for an existing user or not a string
-                        await signOut(auth);
-                        showModal('Phone Not Found', 'Your registered phone number is missing or invalid. Please contact Admin.', () => {
-                            toggleAuthView('login');
-                        });
-                    }
+                    phoneNumberToVerify = currentUserData.phone; // Set phone for OTP sending
+                    toggleAuthView('phone-verify'); // Go to phone verification
+                    showModal('Verification Required', 'Please verify your phone number to access the app.');
                 }
             } else {
                 // No user is signed in, show login screen
-                isAuthListenerReady = false; // Reset flag on logout
+                isAuthListenerInitialized = false; // Reset flag on logout
                 dom.authScreens.classList.remove('hidden');
                 dom.appScreen.classList.add('hidden');
                 toggleAuthView('login'); // Ensure login form is shown by default
