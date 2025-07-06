@@ -890,13 +890,13 @@
         /**
          * Retries fetching user profile data from Realtime Database.
          * @param {string} uid - The user's UID.
-         * @param {number} retries - Number of retries left.
+         * @param {number} maxRetries - Maximum number of retries.
          * @param {number} delayMs - Delay in milliseconds between retries.
          * @returns {Promise<Object|null>} User data or null if not found after retries.
          */
-        async function fetchUserProfileWithRetry(uid, retries = 5, delayMs = 1000) { // Increased retries and delay
+        async function fetchUserProfileWithRetry(uid, maxRetries, delayMs) {
             const userRef = ref(db, `users/${uid}`);
-            for (let i = 0; i <= retries; i++) {
+            for (let i = 0; i < maxRetries; i++) {
                 try {
                     const snapshot = await get(userRef);
                     const userData = snapshot.val();
@@ -907,12 +907,10 @@
                 } catch (error) {
                     console.error(`Error fetching user data (attempt ${i + 1}):`, error);
                 }
-                if (i < retries) {
-                    console.log(`Retrying user data fetch in ${delayMs}ms...`);
-                    await new Promise(resolve => setTimeout(resolve, delayMs));
-                }
+                console.log(`Retrying user data fetch in ${delayMs}ms (attempt ${i + 1}/${maxRetries})...`);
+                await new Promise(resolve => setTimeout(resolve, delayMs));
             }
-            console.warn(`❌ User data not found after ${retries + 1} attempts for UID: ${uid}`);
+            console.warn(`❌ User data not found after ${maxRetries} attempts for UID: ${uid}`);
             return null;
         }
 
@@ -935,7 +933,7 @@
                 const user = userCredential.user;
 
                 // Attempt to fetch user data with retry logic
-                const fetchedUserData = await fetchUserProfileWithRetry(user.uid);
+                const fetchedUserData = await fetchUserProfileWithRetry(user.uid, 5, 1000); // Using default retries/delay for login button
 
                 if (!fetchedUserData) {
                     // User data not found in DB after retries
@@ -1647,11 +1645,31 @@
                 // User is signed in.
                 const currentDeviceIdentifier = await getDeviceId(); // Get current device ID
 
-                // Attempt to fetch user data with retry logic
-                const fetchedUserData = await fetchUserProfileWithRetry(user.uid);
+                let fetchedUserData = null;
+                const userRef = ref(db, `users/${user.uid}`);
+                const maxRetries = 3;
+                const delayMs = 200;
+
+                for (let i = 0; i < maxRetries; i++) {
+                    try {
+                        const snapshot = await get(userRef);
+                        const userData = snapshot.val();
+                        if (userData) {
+                            fetchedUserData = userData;
+                            console.log(`✅ User data fetched on attempt ${i + 1}:`, fetchedUserData);
+                            break; // Exit loop if data is found
+                        }
+                    } catch (error) {
+                        console.error(`Error fetching user data (attempt ${i + 1}):`, error);
+                    }
+                    if (i < maxRetries - 1) { // Don't delay after the last attempt
+                        console.log(`Retrying user data fetch in ${delayMs}ms (attempt ${i + 1}/${maxRetries})...`);
+                        await new Promise(resolve => setTimeout(resolve, delayMs));
+                    }
+                }
 
                 if (!fetchedUserData) {
-                    // User data not found in DB after retries, even though auth user exists.
+                    // User data not found in DB after all retries.
                     await signOut(auth); // Log out immediately
                     showModal('User Data Missing', 'Your user profile data could not be retrieved. Please contact Admin.', () => {
                         toggleAuthView('login');
