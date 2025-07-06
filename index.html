@@ -5,8 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diya-Hero Self-Attendance</title>
+    <!-- Font Awesome for icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts - Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Global box-sizing for consistent layout */
@@ -413,11 +416,14 @@
 </head>
 
 <body>
+    <!-- Main Application Wrapper -->
     <div id="app-wrapper" class="w-full flex justify-center items-center">
 
+        <!-- Authentication Screens (Login, Phone Verify, OTP, Signup) -->
         <div id="auth-screens" class="card">
             <h1 class="text-2xl sm:text-3xl font-bold text-blue-800 text-center mb-4">Diya-Hero Self-Attendance</h1>
 
+            <!-- Login Form -->
             <div id="login-form" class="space-y-5">
                 <div class="form-group">
                     <label for="login-email" class="block text-gray-700 text-sm font-semibold mb-2">Email</label>
@@ -436,6 +442,7 @@
                 </button>
             </div>
 
+            <!-- Phone Verification Form -->
             <div id="phone-verify-form" class="space-y-5 hidden">
                 <p class="text-lg text-gray-700 text-center">Please enter the last 4 digits of your registered phone
                     number.</p>
@@ -454,6 +461,7 @@
                 </button>
             </div>
 
+            <!-- OTP Verification Form -->
             <div id="otp-form" class="space-y-5 hidden">
                 <p class="text-lg text-gray-700 text-center">An OTP has been sent to your registered phone number.</p>
                 <div class="form-group">
@@ -471,6 +479,7 @@
                 <div id="recaptcha-container" class="mt-4"></div>
             </div>
 
+            <!-- Signup Form -->
             <div id="signup-form" class="space-y-5 hidden">
                 <div class="form-group">
                     <label for="signup-name" class="block text-gray-700 text-sm font-semibold mb-2">Name</label>
@@ -504,6 +513,7 @@
             </div>
         </div>
 
+        <!-- Main App Screen -->
         <div id="app-screen" class="card app-screen-card hidden">
             <div class="app-header">
                 <h2 class="text-xl sm:text-2xl font-bold text-blue-800">Diya-Hero Self-Attendance</h2>
@@ -550,6 +560,7 @@
         </div>
     </div>
 
+    <!-- Modal for messages -->
     <div id="message-modal-overlay" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -858,8 +869,8 @@
                 return;
             }
 
-            // Only proceed if employee ID and phone are present
-            if (!currentUserData.employeeId) {
+            // Corrected: Check currentUserData.id for employee ID
+            if (!currentUserData.id) {
                 showModal('Employee ID Missing', 'Your employee ID is missing. Please contact Admin. Attendance will not be recorded.');
                 dom.locationStatus.classList.add('error');
                 dom.locationMessage.textContent = 'Employee ID missing.';
@@ -979,69 +990,71 @@
 
             // Attendance is only open Monday to Saturday (1-6)
             if (currentDay === 0) { // Sunday
-                dom.morningCheck.disabled = true;
-                dom.anEnters.disabled = true;
-                dom.anLeaves.disabled = true;
-                dom.anNone.disabled = true;
-                dom.submitAttendanceBtn.disabled = true;
+                if (dom.morningCheck) dom.morningCheck.disabled = true;
+                if (dom.anEnters) dom.anEnters.disabled = true;
+                if (dom.anLeaves) dom.anLeaves.disabled = true;
+                if (dom.anNone) dom.anNone.disabled = true;
+                if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
                 showMessage(dom.attendanceMessage, "Attendance is closed on Sundays.", 'error');
                 return;
             } else {
                 hideMessage(dom.attendanceMessage);
             }
 
-            let morningChecked = dom.morningCheck.checked;
-            let afternoonStatusSelected = dom.anEnters.checked || dom.anLeaves.checked || dom.anNone.checked;
+            let morningChecked = dom.morningCheck ? dom.morningCheck.checked : false;
+            let afternoonStatusSelected = (dom.anEnters ? dom.anEnters.checked : false) || (dom.anLeaves ? dom.anLeaves.checked : false) || (dom.anNone ? dom.anNone.checked : false);
 
             // Morning attendance: 7 AM to 12 PM (noon)
             if (currentHour >= 7 && currentHour < 12) {
-                dom.morningCheck.disabled = false;
-                dom.anEnters.disabled = true;
-                dom.anLeaves.disabled = true;
-                dom.anNone.disabled = true;
+                if (dom.morningCheck) dom.morningCheck.disabled = false;
+                if (dom.anEnters) dom.anEnters.disabled = true;
+                if (dom.anLeaves) dom.anLeaves.disabled = true;
+                if (dom.anNone) dom.anNone.disabled = true;
                 if (!morningChecked) {
-                    dom.submitAttendanceBtn.disabled = true; // Must check morning
+                    if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true; // Must check morning
                 } else {
-                    dom.submitAttendanceBtn.disabled = false;
+                    if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = false;
                 }
             }
             // Afternoon attendance: 12 PM (noon) to 3 PM
             else if (currentHour >= 12 && currentHour < 15) {
-                dom.morningCheck.disabled = true; // Morning is closed
-                dom.anEnters.disabled = false;
-                dom.anLeaves.disabled = false;
-                dom.anNone.disabled = false;
+                if (dom.morningCheck) dom.morningCheck.disabled = true; // Morning is closed
+                if (dom.anEnters) dom.anEnters.disabled = false;
+                if (dom.anLeaves) dom.anLeaves.disabled = false;
+                if (dom.anNone) dom.anNone.disabled = false;
                 if (!afternoonStatusSelected) {
-                    dom.submitAttendanceBtn.disabled = true; // Must select afternoon status
+                    if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true; // Must select afternoon status
                 } else {
-                    dom.submitAttendanceBtn.disabled = false;
+                    if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = false;
                 }
             }
             // After 3 PM: All attendance closed for the day
             else if (currentHour >= 15 || currentHour < 7) {
-                dom.morningCheck.disabled = true;
-                dom.anEnters.disabled = true;
-                dom.anLeaves.disabled = true;
-                dom.anNone.disabled = true;
-                dom.submitAttendanceBtn.disabled = true;
+                if (dom.morningCheck) dom.morningCheck.disabled = true;
+                if (dom.anEnters) dom.anEnters.disabled = true;
+                if (dom.anLeaves) dom.anLeaves.disabled = true;
+                if (dom.anNone) dom.anNone.disabled = true;
+                if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
                 showMessage(dom.attendanceMessage, "Attendance is closed for the day.", 'error');
             }
 
             // Always disable submit if location not verified
-            if (!dom.locationStatus.classList.contains('verified')) {
-                dom.submitAttendanceBtn.disabled = true;
+            if (dom.locationStatus && !dom.locationStatus.classList.contains('verified')) {
+                if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
             }
         }
 
 
         async function submitAttendance() {
-            if (!currentUserData || !currentUserData.employeeId || !dom.locationStatus.classList.contains('verified')) {
+            // Corrected: Check currentUserData.id
+            if (!currentUserData || !currentUserData.id || !dom.locationStatus.classList.contains('verified')) {
                 showModal('Submission Error', 'Cannot submit attendance. Ensure you are logged in and location is verified.');
                 return;
             }
 
-            const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-            const attendanceRef = ref(db, `attendance/${today}/${currentUserData.branch}/${currentUserData.subdivision}/${currentUserData.employeeId}`);
+            const today = new Date().toISOString().slice(0, 10); //YYYY-MM-DD
+            // Corrected: Use currentUserData.id
+            const attendanceRef = ref(db, `attendance/${today}/${currentUserData.branch}/${currentUserData.subdivision}/${currentUserData.id}`);
 
             const updates = {};
             let isMorningChecked = dom.morningCheck.checked;
@@ -1131,7 +1144,7 @@
             const name = dom.signupNameInput.value;
             const email = dom.signupEmailInput.value;
             const password = dom.signupPasswordInput.value;
-            const employeeId = dom.signupEmployeeIdInput.value;
+            const employeeId = dom.signupEmployeeIdInput.value; // This is the input value
             const phone = dom.signupPhoneInput.value;
 
             if (!name || !email || !password || !employeeId || !phone) {
@@ -1158,7 +1171,7 @@
                 await set(ref(db, 'users/' + user.uid), {
                     name: name,
                     email: email,
-                    employeeId: employeeId,
+                    id: employeeId, // Corrected: Store as 'id'
                     phone: phone, // Store the full phone number for verification
                     role: 'employee', // Default role
                     isVerified: false, // Mark as not phone verified initially
@@ -1170,9 +1183,9 @@
                     lastDevice: currentDeviceId // Record initial device
                 });
 
-                // Set initial attendance log entry
+                // Set initial attendance log entry (using 'id' for path)
                 const today = new Date().toISOString().slice(0, 10);
-                const attendanceRef = ref(db, `attendance/${today}/${user.uid}`);
+                const attendanceRef = ref(db, `attendance/${today}/chennai/accounts/${employeeId}`); // Use employeeId for path
                 await set(attendanceRef, {
                     morning: null,
                     afternoon: null
@@ -1389,7 +1402,8 @@
                             return; // Stop further processing for non-employees
                         }
 
-                        if (!currentUserData.employeeId) {
+                        // Corrected: Check currentUserData.id
+                        if (!currentUserData.id) {
                             showModal('Employee ID Missing', 'Your employee ID is missing. Please contact Admin. Attendance will not be recorded.', async () => {
                                 await signOut(auth); // Log out if employee ID is missing
                                 dom.authScreens.classList.remove('hidden');
@@ -1501,6 +1515,8 @@
             setInterval(updateFormDisablementBasedOnTime, 60000); // Check every minute
         });
     </script>
+    <!-- Google reCAPTCHA API script -->
+    <!-- The onloadCallback is implicitly called by the reCAPTCHA script once it's loaded -->
     <script src="https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit" async defer></script>
 </body>
 
