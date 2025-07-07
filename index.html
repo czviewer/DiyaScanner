@@ -6,11 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diya-Hero Self-Attendance</title>
     <!-- Font Awesome for icons -->
-    <link href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css)" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <!-- Google Fonts - Inter -->
-    <link href="[https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap](https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap)" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <!-- Tailwind CSS CDN -->
-    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Global box-sizing for consistent layout */
         * {
@@ -591,7 +591,7 @@
         // Firebase Modular SDK v10+ imports
         import {
             initializeApp
-        } from '[https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js](https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js)';
+        } from 'https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js';
         import {
             getAuth,
             signInWithEmailAndPassword,
@@ -603,7 +603,7 @@
             signInWithPhoneNumber,
             setPersistence,
             browserLocalPersistence
-        } from '[https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js](https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js)';
+        } from 'https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js';
         import {
             getDatabase,
             ref,
@@ -611,13 +611,13 @@
             set,
             update,
             onValue
-        } from '[https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js](https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js)';
+        } from 'https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js';
 
         // Firebase configuration (replace with your actual config if different)
         const firebaseConfig = {
             apiKey: "AIzaSyBU3K7gRzqiqQt3o9thoEpd06ReLGVmm_w",
             authDomain: "diya-hero.firebaseapp.com",
-            databaseURL: "[https://diya-hero-default-rtdb.asia-southeast1.firebasedatabase.app](https://diya-hero-default-rtdb.asia-southeast1.firebasedatabase.app)",
+            databaseURL: "https://diya-hero-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "diya-hero",
             storageBucket: "diya-hero.firebasestorage.app",
             messagingSenderId: "455829653263",
@@ -1282,6 +1282,9 @@
                     boundDevice: currentDeviceId // Store the unique device ID on first signup
                 };
 
+                // ADDED THIS LINE FOR DEBUGGING:
+                console.log("Attempting to save new user data to DB:", newUserData);
+
                 // Store additional user data in Realtime Database, including the bound device ID
                 await set(ref(db, 'users/' + user.uid), newUserData);
 
@@ -1627,7 +1630,7 @@
     </script>
     <!-- Google reCAPTCHA API script -->
     <!-- The onloadCallback is implicitly called by the reCAPTCHA script once it's loaded -->
-    <script src="[https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit](https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit)" async defer></script>
+    <script src="https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit" async defer></script>
 </body>
 
 </html>
