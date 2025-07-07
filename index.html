@@ -79,7 +79,8 @@
         input[type="password"],
         input[type="text"],
         input[type="number"],
-        input[type="tel"] {
+        input[type="tel"],
+        select { /* Added select to input styling */
             width: 100%;
             padding: 12px 16px;
             border: 1px solid #e2e8f0;
@@ -94,7 +95,8 @@
         input[type="password"]:focus,
         input[type="text"]:focus,
         input[type="number"]:focus,
-        input[type="tel"]:focus {
+        input[type="tel"]:focus,
+        select:focus { /* Added select to focus styling */
             outline: none;
             border-color: #3b82f6;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
@@ -480,7 +482,7 @@
             </div>
 
             <!-- Signup Form -->
-            <div id="signup-form" class="space-y-5 hidden">
+            <div id="signup-form" class="space-y-5">
                 <div class="form-group">
                     <label for="signup-name" class="block text-gray-700 text-sm font-semibold mb-2">Name</label>
                     <input type="text" id="signup-name" placeholder="Enter your full name">
@@ -502,6 +504,18 @@
                     <label for="signup-phone" class="block text-gray-700 text-sm font-semibold mb-2">Phone Number (e.g.,
                         +919876543210)</label>
                     <input type="tel" id="signup-phone" placeholder="Enter your phone number with country code">
+                </div>
+                <!-- Branch Selection -->
+                <div class="form-group">
+                    <label for="branchSelect" class="block text-gray-700 text-sm font-semibold mb-2">Branch</label>
+                    <select id="branchSelect" required class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+                </div>
+                <!-- Subdivision Selection -->
+                <div class="form-group">
+                    <label for="subdivisionSelect" class="block text-gray-700 text-sm font-semibold mb-2">Subdivision</label>
+                    <select id="subdivisionSelect" required class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" disabled>
+                        <option value="">Select a branch first</option>
+                    </select>
                 </div>
                 <button id="signup-btn" class="btn btn-primary">
                     <i class="fas fa-user-plus"></i> Sign Up
@@ -612,7 +626,9 @@
             get,
             set,
             update,
-            onValue
+            onValue,
+            query,
+            orderByKey // Import orderByKey for fetching branches alphabetically
         } from 'https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js';
 
         // Firebase configuration (replace with your actual config if different)
@@ -646,6 +662,9 @@
         let isProcessingAuthState = false; // Prevents re-entry into onAuthStateChanged processing
         let lastProcessedUID = null; // Tracks the UID that was last fully processed by onAuthStateChanged
         let isAuthListenerInitialized = false; // Ensures auth state listener only processes once per session
+
+        // Store fetched branches data
+        let branchesData = {};
 
         // --- DOM Elements (initialized in getDomElements) ---
         const dom = {};
@@ -685,6 +704,8 @@
             dom.signupPasswordInput = document.getElementById('signup-password');
             dom.signupEmployeeIdInput = document.getElementById('signup-employee-id');
             dom.signupPhoneInput = document.getElementById('signup-phone');
+            dom.branchSelect = document.getElementById('branchSelect'); // New DOM element
+            dom.subdivisionSelect = document.getElementById('subdivisionSelect'); // New DOM element
             dom.signupBtn = document.getElementById('signup-btn');
             dom.showLoginBtn = document.getElementById('show-login-btn');
             dom.signupMessage = document.getElementById('signup-message');
@@ -774,6 +795,8 @@
                 renderRecaptcha(); // Render reCAPTCHA when OTP form is shown
             } else if (view === 'signup') {
                 dom.signupForm.classList.remove('hidden');
+                // When showing signup form, populate branches
+                populateBranchesDropdown();
             }
         }
 
@@ -1242,15 +1265,76 @@
             }
         }
 
+        // --- Dynamic Dropdown Population Functions ---
+        async function populateBranchesDropdown() {
+            if (!dom.branchSelect) {
+                console.error("Branch select element not found.");
+                return;
+            }
+
+            dom.branchSelect.innerHTML = '<option value="">Loading branches...</option>';
+            dom.branchSelect.disabled = true;
+            dom.subdivisionSelect.innerHTML = '<option value="">Select a branch first</option>';
+            dom.subdivisionSelect.disabled = true;
+
+            try {
+                const branchesRef = query(ref(db, 'branches'), orderByKey()); // Order by key for alphabetical branches
+                const snapshot = await get(branchesRef);
+
+                if (snapshot.exists()) {
+                    branchesData = snapshot.val(); // Store all branches data
+                    let optionsHtml = '<option value="">Select a branch</option>';
+                    for (const branchName in branchesData) {
+                        optionsHtml += `<option value="${branchName}">${branchName}</option>`;
+                    }
+                    dom.branchSelect.innerHTML = optionsHtml;
+                    dom.branchSelect.disabled = false;
+                } else {
+                    dom.branchSelect.innerHTML = '<option value="">No branches found</option>';
+                    showMessage(dom.signupMessage, 'No branches configured in the database. Please contact Admin.', 'error');
+                }
+            } catch (error) {
+                console.error("Error fetching branches:", error);
+                dom.branchSelect.innerHTML = '<option value="">Error loading branches</option>';
+                showMessage(dom.signupMessage, `Error loading branches: ${error.message}`, 'error');
+            }
+        }
+
+        function populateSubdivisionsDropdown(selectedBranch) {
+            if (!dom.subdivisionSelect) {
+                console.error("Subdivision select element not found.");
+                return;
+            }
+
+            dom.subdivisionSelect.innerHTML = '<option value="">Select a subdivision</option>';
+            dom.subdivisionSelect.disabled = true;
+
+            if (selectedBranch && branchesData[selectedBranch] && branchesData[selectedBranch].subdivisions) {
+                const subdivisions = branchesData[selectedBranch].subdivisions;
+                let optionsHtml = '<option value="">Select a subdivision</option>';
+                for (const subName in subdivisions) {
+                    optionsHtml += `<option value="${subName}">${subName}</option>`;
+                }
+                dom.subdivisionSelect.innerHTML = optionsHtml;
+                dom.subdivisionSelect.disabled = false;
+            } else if (selectedBranch) {
+                dom.subdivisionSelect.innerHTML = '<option value="">No subdivisions found for this branch</option>';
+            }
+        }
+
         async function handleSignup() {
             const name = dom.signupNameInput.value;
             const email = dom.signupEmailInput.value;
             const password = dom.signupPasswordInput.value;
-            const employeeId = dom.signupEmployeeIdInput.value; // This is the input value
+            const employeeId = dom.signupEmployeeIdInput.value;
             const phone = dom.signupPhoneInput.value;
 
-            if (!name || !email || !password || !employeeId || !phone) {
-                showMessage(dom.signupMessage, 'Please fill in all fields.', 'error');
+            // --- New: Get selected branch and subdivision with null checks ---
+            const branch = dom.branchSelect ? dom.branchSelect.value : '';
+            const subdivision = dom.subdivisionSelect ? dom.subdivisionSelect.value : '';
+
+            if (!name || !email || !password || !employeeId || !phone || !branch || !subdivision) {
+                showMessage(dom.signupMessage, 'Please fill in all fields, including branch and subdivision.', 'error');
                 return;
             }
             if (password.length < 6) {
@@ -1269,54 +1353,42 @@
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
 
-                // Ensure device ID is generated before storing it
                 await generateDeviceId();
 
                 const newUserData = {
                     name: name,
                     email: email,
-                    id: employeeId, // Unique Employee ID
-                    phone: phone, // Full phone number
-                    role: 'employee', // Default role
-                    isPhoneVerified: false, // OTP will set this to true
-                    branch: document.getElementById("branchSelect").value,
-                    subdivision: document.getElementById("subdivisionSelect").value,
+                    id: employeeId,
+                    phone: phone,
+                    role: 'employee',
+                    isVerified: false,
+                    branch: branch, // Use selected branch
+                    subdivision: subdivision, // Use selected subdivision
                     joinedDate: new Date().toISOString().slice(0, 10),
                     uid: user.uid,
                     lastLogin: new Date().toISOString(),
-                    boundDevice: currentDeviceId // Generated device fingerprint
+                    boundDevice: currentDeviceId
                 };
 
-                // ADDED THIS LINE FOR DEBUGGING:
                 console.log("Attempting to save new user data to DB:", newUserData);
-
-                // Store additional user data in Realtime Database, including the bound device ID
                 await set(ref(db, 'users/' + user.uid), newUserData);
 
-                // IMPORTANT: Update currentUserData immediately after successful signup data write
-                // This ensures the onAuthStateChanged listener (which might fire very quickly)
-                // has the correct data and doesn't trigger the "User data not found" path.
                 currentUserData = newUserData;
 
-
-                // Set initial attendance log entry (using 'id' for path)
                 const today = new Date().toISOString().slice(0, 10);
                 try {
-                    const attendanceRef = ref(db, `attendance/${today}/chennai/accounts/${employeeId}`); // Use employeeId for path
+                    const attendanceRef = ref(db, `attendance/${today}/${branch}/${subdivision}/${employeeId}`); // Use selected branch/subdivision
                     await set(attendanceRef, {
                         morning: null,
                         afternoon: null
                     });
                 } catch (attendanceError) {
                     console.error("Error setting initial attendance record:", attendanceError);
-                    // This error is less critical for signup success, but should be logged.
-                    // The main user data is still saved.
                 }
-
 
                 showMessage(dom.signupMessage, 'Signup successful! Please proceed to login.', 'success');
                 showModal('Signup Success', 'Your account has been created. Please log in.');
-                toggleAuthView('login'); // Go back to login after successful signup
+                toggleAuthView('login');
             } catch (error) {
                 console.error("Signup error:", error);
                 let errorMessage = "Signup failed.";
@@ -1464,12 +1536,14 @@
                     errorMessage = "OTP expired. Please resend.";
                     dom.resendOtpBtn.disabled = false;
                 } else if (error.code === 'auth/credential-already-in-use') {
-                    errorMessage = "This phone number is already linked to another account. Please log in with that account or contact support.";
+                    // Specific handling for phone number already linked to another account
+                    console.warn("Auth Error: Phone number already linked to another account.", error);
+                    errorMessage = "This phone number is already linked to another account. Please log in with that account or contact Admin.";
                     showModal('Linking Error', errorMessage, async () => {
-                        await signOut(auth); // Log out if linking fails due to existing link
-                        toggleAuthView('login');
+                        await signOut(auth); // Force sign out the current user
+                        toggleAuthView('login'); // Redirect to login
                     });
-                    return;
+                    return; // Crucial to return after handling this specific error
                 } else if (error.code === 'auth/email-already-in-use') {
                     errorMessage = "This email is already linked to another account.";
                     showModal('Linking Error', errorMessage, async () => {
@@ -1680,6 +1754,13 @@
             if (dom.showSignupBtn) dom.showSignupBtn.addEventListener('click', () => toggleAuthView('signup'));
             if (dom.showLoginBtn) dom.showLoginBtn.addEventListener('click', () => toggleAuthView('login'));
             if (dom.backToLoginBtn) dom.backToLoginBtn.addEventListener('click', () => toggleAuthView('login'));
+
+            // New: Add event listeners for branch and subdivision dropdowns
+            if (dom.branchSelect) {
+                dom.branchSelect.addEventListener('change', (event) => {
+                    populateSubdivisionsDropdown(event.target.value);
+                });
+            }
 
 
             // Attach event listeners for attendance form changes
