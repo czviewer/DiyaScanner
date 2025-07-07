@@ -1325,26 +1325,26 @@
         }
 
         async function handleSignup() {
-            const name = dom.signupNameInput?.value?.trim();
-            const email = dom.signupEmailInput?.value?.trim();
-            const password = dom.signupPasswordInput?.value?.trim();
-            const employeeId = dom.signupEmployeeIdInput?.value?.trim();
-            const phone = dom.signupPhoneInput?.value?.trim();
+            const nameInput = dom.signupNameInput?.value?.trim();
+            const emailInput = dom.signupEmailInput?.value?.trim();
+            const passwordInput = dom.signupPasswordInput?.value?.trim();
+            const employeeIdInput = dom.signupEmployeeIdInput?.value?.trim();
+            const phoneInput = dom.signupPhoneInput?.value?.trim();
 
             // --- Get selected branch and subdivision with null/empty checks ---
-            const branch = dom.branchSelect?.value?.trim();
-            const subdivision = dom.subdivisionSelect?.value?.trim();
+            const branchInput = dom.branchSelect?.value?.trim();
+            const subdivisionInput = dom.subdivisionSelect?.value?.trim();
 
             // --- Validate all fields, including branch and subdivision ---
-            if (!name || !email || !password || !employeeId || !phone || !branch || !subdivision) {
+            if (!nameInput || !emailInput || !passwordInput || !employeeIdInput || !phoneInput || !branchInput || !subdivisionInput) {
                 showMessage(dom.signupMessage, 'Please fill in all fields, including branch and subdivision.', 'error');
                 return;
             }
-            if (password.length < 6) {
+            if (passwordInput.length < 6) {
                 showMessage(dom.signupMessage, 'Password should be at least 6 characters.', 'error');
                 return;
             }
-            if (!phone.startsWith('+')) {
+            if (!phoneInput.startsWith('+')) {
                 showMessage(dom.signupMessage, 'Phone number must start with a country code (e.g., +91).', 'error');
                 return;
             }
@@ -1353,35 +1353,65 @@
             dom.signupBtn.disabled = true;
 
             try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                // Create Auth user first
+                const userCredential = await createUserWithEmailAndPassword(auth, emailInput, passwordInput);
                 const user = userCredential.user;
 
+                // Generate or get existing device ID
                 await generateDeviceId();
 
-                const newUserData = {
-                    name: name,
-                    email: email,
-                    id: employeeId,
-                    phone: phone,
-                    role: 'employee',
+                // Initialize newUserData with values from signup form (these are potential fallbacks)
+                let newUserData = {
+                    name: nameInput,
+                    email: emailInput,
+                    id: employeeIdInput,
+                    phone: phoneInput,
+                    role: 'employee', // Default role
                     isVerified: false, // Phone verification status, initially false
-                    branch: branch, // Use selected branch
-                    subdivision: subdivision, // Use selected subdivision
+                    branch: branchInput, // Initially from user input
+                    subdivision: subdivisionInput, // Initially from user input
                     joinedDate: new Date().toISOString().slice(0, 10),
                     uid: user.uid,
                     lastLogin: new Date().toISOString(),
                     boundDevice: currentDeviceId
                 };
 
-                console.log("Attempting to save new user data to DB:", newUserData);
+                // 3. Fetch admin-defined employee data
+                const adminEmployeeRef = ref(db, `branches/${branchInput}/subdivisions/${subdivisionInput}/employees/${employeeIdInput}`);
+                const adminSnapshot = await get(adminEmployeeRef);
+
+                if (adminSnapshot.exists()) {
+                    const adminData = adminSnapshot.val();
+                    console.log("Admin pre-assigned data found:", adminData);
+
+                    // Merge logic: Admin data takes precedence, fallback to employee input if admin field is missing
+                    newUserData.name = adminData.name || newUserData.name;
+                    newUserData.email = adminData.email || newUserData.email;
+                    newUserData.phone = adminData.phone || newUserData.phone;
+                    newUserData.branch = adminData.branch || newUserData.branch; // Admin-defined branch takes precedence
+                    newUserData.subdivision = adminData.subdivision || newUserData.subdivision; // Admin-defined subdivision takes precedence
+                    if (adminData.des) { // Include 'des' if it exists in admin data
+                        newUserData.des = adminData.des;
+                    }
+                    // employeeId (id field) is the lookup key, so it remains from input.
+                    // 'role', 'isVerified', 'joinedDate', 'uid', 'lastLogin', 'boundDevice' are managed by the app logic.
+                } else {
+                    console.warn(`No pre-assigned admin data found for employee ID: ${employeeIdInput} in branch: ${branchInput}, subdivision: ${subdivisionInput}. Proceeding with user-provided input.`);
+                    // If no admin data, newUserData already holds the user's input, which is the desired fallback.
+                }
+
+                console.log("Final user data to save to DB:", newUserData);
+
+                // 4. Save merged user data to Realtime DB
                 await set(ref(db, 'users/' + user.uid), newUserData);
 
-                currentUserData = newUserData; // Update global state with new user data
+                // Update global state with the final merged user data
+                currentUserData = newUserData;
 
+                // 5. Create initial attendance record using the merged branch and subdivision
                 const today = new Date().toISOString().slice(0, 10);
                 try {
-                    // Create initial attendance record using the selected branch and subdivision
-                    const attendanceRef = ref(db, `attendance/${today}/${branch}/${subdivision}/${employeeId}`);
+                    const attendanceRef = ref(db, `attendance/${today}/${newUserData.branch}/${newUserData.subdivision}/${newUserData.id}`);
                     await set(attendanceRef, {
                         morning: null,
                         afternoon: null
