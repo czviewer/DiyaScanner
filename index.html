@@ -601,6 +601,8 @@
             deleteUser,
             RecaptchaVerifier,
             signInWithPhoneNumber,
+            PhoneAuthProvider, // Import PhoneAuthProvider
+            linkWithCredential, // Import linkWithCredential
             setPersistence,
             browserLocalPersistence
         } from 'https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js';
@@ -877,13 +879,15 @@
 
         // --- Location and Attendance Logic ---
         async function checkUserLocationAndAttendance() {
+            // Ensure the refresh button is always visible on the app screen
+            if (dom.refreshLocationBtn) {
+                dom.refreshLocationBtn.classList.remove('hidden');
+            }
+
             if (!currentUserData) {
                 showMessage(dom.locationMessage, "User data not loaded. Please log in again.", 'error');
-                // Ensure submit button is disabled if no user data
                 if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
-                // Keep attendance section visible but inputs disabled if no user data
                 if (dom.attendanceSection) dom.attendanceSection.classList.remove('hidden');
-                // Disable attendance inputs
                 if (dom.morningCheck) dom.morningCheck.disabled = true;
                 if (dom.anEnters) dom.anEnters.disabled = true;
                 if (dom.anLeaves) dom.anLeaves.disabled = true;
@@ -891,12 +895,10 @@
                 return;
             }
 
-            // Corrected: Check currentUserData.id for employee ID
             if (!currentUserData.id) {
                 showModal('Employee ID Missing', 'Your employee ID is missing. Please contact Admin. Attendance will not be recorded.');
                 dom.locationStatus.classList.add('error');
                 dom.locationMessage.textContent = 'Employee ID missing.';
-                // Keep attendance section visible but inputs disabled
                 if (dom.attendanceSection) dom.attendanceSection.classList.remove('hidden');
                 if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
                 if (dom.morningCheck) dom.morningCheck.disabled = true;
@@ -911,7 +913,6 @@
                 });
                 dom.locationStatus.classList.add('error');
                 dom.locationMessage.textContent = 'Phone number missing.';
-                // Keep attendance section visible but inputs disabled
                 if (dom.attendanceSection) dom.attendanceSection.classList.remove('hidden');
                 if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
                 if (dom.morningCheck) dom.morningCheck.disabled = true;
@@ -923,7 +924,6 @@
 
             dom.locationStatus.classList.remove('verified', 'error');
             dom.locationMessage.textContent = 'Checking location...';
-            // Ensure attendance section is visible, but controls are disabled until location is verified
             if (dom.attendanceSection) dom.attendanceSection.classList.remove('hidden');
             if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
             if (dom.morningCheck) dom.morningCheck.disabled = true;
@@ -969,7 +969,6 @@
                             dom.locationStatus.classList.remove('verified');
                             dom.locationStatus.classList.add('error');
                             dom.locationMessage.textContent = `Location Error: You are ${distance.toFixed(2)}m away from ${currentUserData.branch} branch. Please move closer.`;
-                            // Ensure attendance inputs are disabled if out of range
                             if (dom.morningCheck) dom.morningCheck.disabled = true;
                             if (dom.anEnters) dom.anEnters.disabled = true;
                             if (dom.anLeaves) dom.anLeaves.disabled = true;
@@ -980,7 +979,6 @@
                         dom.locationStatus.classList.remove('verified');
                         dom.locationStatus.classList.add('error');
                         dom.locationMessage.textContent = `Branch location not found for ${currentUserData.branch}. Contact Admin.`;
-                        // Ensure attendance inputs are disabled if branch not found
                         if (dom.morningCheck) dom.morningCheck.disabled = true;
                         if (dom.anEnters) dom.anEnters.disabled = true;
                         if (dom.anLeaves) dom.anLeaves.disabled = true;
@@ -1001,7 +999,6 @@
                     dom.locationStatus.classList.remove('verified');
                     dom.locationStatus.classList.add('error');
                     dom.locationMessage.textContent = `Location Error: ${errorMessage}`;
-                    // Ensure attendance inputs are disabled on error
                     if (dom.morningCheck) dom.morningCheck.disabled = true;
                     if (dom.anEnters) dom.anEnters.disabled = true;
                     if (dom.anLeaves) dom.anLeaves.disabled = true;
@@ -1012,7 +1009,6 @@
                 dom.locationStatus.classList.remove('verified');
                 dom.locationStatus.classList.add('error');
                 dom.locationMessage.textContent = 'Geolocation is not supported by your browser.';
-                // Ensure attendance inputs are disabled if geolocation not supported
                 if (dom.morningCheck) dom.morningCheck.disabled = true;
                 if (dom.anEnters) dom.anEnters.disabled = true;
                 if (dom.anLeaves) dom.anLeaves.disabled = true;
@@ -1338,8 +1334,14 @@
             dom.verifyPhoneBtn.disabled = true;
 
             try {
+                // Ensure there's a currently signed-in user before attempting phone verification
+                const user = auth.currentUser;
+                if (!user) {
+                    throw new Error("No user currently signed in. Please log in first.");
+                }
+
                 if (!currentUserData || !currentUserData.phone) {
-                    throw new Error("User data or phone number not available.");
+                    throw new Error("User data or phone number not available for the current user.");
                 }
 
                 // Check if the last 4 digits match
@@ -1377,6 +1379,10 @@
                     errorMessage = "Please complete the reCAPTCHA verification.";
                 } else if (error.code === 'auth/quota-exceeded') {
                     errorMessage = "Too many SMS requests. Please try again later.";
+                } else if (error.message.includes("No user currently signed in")) {
+                    errorMessage = "You need to be logged in to verify your phone number.";
+                    showModal('Login Required', errorMessage, () => toggleAuthView('login'));
+                    return; // Stop further processing and return to login
                 }
                 showMessage(dom.phoneVerifyMessage, errorMessage, 'error');
                 if (recaptchaWidgetId !== null) {
@@ -1405,16 +1411,30 @@
             dom.verifyOtpBtn.disabled = true;
 
             try {
-                await confirmationResult.confirm(otp);
-                // OTP verified, update user's isVerified status in DB
-                // IMPORTANT FIX: Use currentUserData.uid to ensure the update is for the original user
+                // Get the PhoneAuthCredential from the confirmation result
+                const credential = PhoneAuthProvider.credential(confirmationResult.verificationId, otp);
+
+                // Ensure a user is currently signed in before linking
+                const user = auth.currentUser;
+                if (!user) {
+                    showModal('Verification Error', 'No user signed in. Please log in again.', async () => {
+                        await signOut(auth);
+                        toggleAuthView('login');
+                    });
+                    return;
+                }
+
+                // Link the phone credential to the currently signed-in user
+                await linkWithCredential(user, credential);
+
+                // OTP verified and credential linked, now update user's isVerified status in DB
                 if (currentUserData && currentUserData.uid) {
                     await update(ref(db, 'users/' + currentUserData.uid), {
                         isVerified: true
                     });
                     currentUserData.isVerified = true; // Update local state
                 } else {
-                    console.error("Error: currentUserData or currentUserData.uid is missing during OTP verification.");
+                    console.error("Error: currentUserData or currentUserData.uid is missing after OTP verification.");
                     showModal('Verification Error', 'Could not identify user for verification update. Please try again.');
                     await signOut(auth); // Log out to force re-authentication
                     return;
@@ -1434,6 +1454,27 @@
                 } else if (error.code === 'auth/code-expired') {
                     errorMessage = "OTP expired. Please resend.";
                     dom.resendOtpBtn.disabled = false;
+                } else if (error.code === 'auth/credential-already-in-use') {
+                    errorMessage = "This phone number is already linked to another account.";
+                    showModal('Linking Error', errorMessage, async () => {
+                        await signOut(auth); // Log out if linking fails due to existing link
+                        toggleAuthView('login');
+                    });
+                    return;
+                } else if (error.code === 'auth/email-already-in-use') {
+                    errorMessage = "This email is already linked to another account.";
+                    showModal('Linking Error', errorMessage, async () => {
+                        await signOut(auth); // Log out if linking fails due to existing link
+                        toggleAuthView('login');
+                    });
+                    return;
+                } else if (error.code === 'auth/no-current-user') {
+                    errorMessage = "No user signed in to link the phone number to. Please log in again.";
+                    showModal('Login Required', errorMessage, async () => {
+                        await signOut(auth);
+                        toggleAuthView('login');
+                    });
+                    return;
                 }
                 showMessage(dom.otpMessage, errorMessage, 'error');
             } finally {
@@ -1565,9 +1606,20 @@
                             isAuthListenerInitialized = true; // Mark listener as initialized
                         } else {
                             // User logged in but OTP not verified, redirect to OTP flow
-                            phoneNumberToVerify = currentUserData.phone; // Set phone for OTP sending
-                            toggleAuthView('phone-verify'); // Go to phone verification
-                            showModal('Verification Required', 'Please verify your phone number to access the app.');
+                            // Ensure the user is still the one we expect before proceeding to phone verification
+                            if (auth.currentUser && auth.currentUser.uid === user.uid) {
+                                phoneNumberToVerify = currentUserData.phone; // Set phone for OTP sending
+                                toggleAuthView('phone-verify'); // Go to phone verification
+                                showModal('Verification Required', 'Please verify your phone number to access the app.');
+                            } else {
+                                // This scenario might occur if the user's auth state changed unexpectedly
+                                // during the async operations. Log out and prompt re-login.
+                                console.warn("Auth state mismatch during phone verification redirection. Logging out.");
+                                showModal('Session Mismatch', 'Your session changed unexpectedly. Please log in again.', async () => {
+                                    await signOut(auth);
+                                    toggleAuthView('login');
+                                });
+                            }
                         }
                     } else {
                         // User exists in Auth but not in Realtime DB (should not happen with proper signup flow)
@@ -1622,6 +1674,7 @@
 
 
             // Attach event listeners for attendance form changes
+            // The refreshLocationBtn is now always visible on the app screen, its listener is set up here.
             if (dom.refreshLocationBtn) dom.refreshLocationBtn.addEventListener('click', checkUserLocationAndAttendance);
             if (dom.morningCheck) dom.morningCheck.addEventListener('change', updateFormDisablementBasedOnTime);
             if (dom.anEnters) dom.anEnters.addEventListener('change', updateFormDisablementBasedOnTime);
