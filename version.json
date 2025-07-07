@@ -1,6 +1,6 @@
 {
   "versionCode": 2,
-  "apkUrl": "https://czviewer.github.io/DiyaScanner/releases/DiyaMotorsv2.apk",
+  "apkUrl": "https://czviewer.github.io/DiyaScanner/releases/DiyaMobikes.apk",
   "forceUpdate": true,
   "message": "Critical update: Security patches applied. Update is mandatory.",
    "sha256": "13913CBFF5EE1F0A877EEC2D4E6540AC20E5C515B65E387BD557B0F8C85B96E5"
