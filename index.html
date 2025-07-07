@@ -652,7 +652,8 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getDatabase(app);
+        const firebaseDatabase = getDatabase(app);
+
 
         // --- Global State Variables ---
         let currentUserData = null; // Stores the fetched user profile data from Realtime DB
