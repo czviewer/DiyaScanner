@@ -652,8 +652,7 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getDatabase(app); 
-        const firebaseDatabase = getDatabase(app); // Use 'db' for Realtime Database instance
+        const db = getDatabase(app); // Use 'db' for Realtime Database instance
 
         // --- Global State Variables ---
         let currentUserData = null; // Stores the fetched user profile data from Realtime DB
@@ -1780,15 +1779,14 @@
                             }
                         }
                     } else {
-                        // User exists in Auth but not in Realtime DB (should not happen with proper signup flow)
-                        console.warn("User data not found in DB for UID:", user.uid);
-                        showModal('User Data Missing', 'Your user profile is incomplete. Please contact Admin.', async () => {
-                            await deleteUser(user); // Clean up incomplete user
-                            await signOut(auth);
-                            dom.authScreens.classList.remove('hidden');
-                            dom.appScreen.classList.add('hidden');
-                            toggleAuthView('login');
-                        });
+                        // User exists in Auth but not in Realtime DB (this is the timing issue for new signups)
+                        console.warn("User data not found in DB for UID:", user.uid, "This is expected for a brief moment after new signup.");
+                        // DO NOT delete user or sign out here. The handleSignup function is still writing the data.
+                        // Instead, show a temporary message or just log the warning.
+                        // The user will be redirected to login by handleSignup's success path anyway.
+                        showModal('Profile Loading', 'Your profile is being set up. Please log in in a moment.');
+                        // We don't need to explicitly toggle to login here, as handleSignup will do it on success.
+                        // If handleSignup fails, the user will be left on the signup screen with an error.
                     }
                 } else {
                     // No user is signed in, show login screen
