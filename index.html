@@ -1275,16 +1275,16 @@
                 const newUserData = {
                     name: name,
                     email: email,
-                    id: employeeId, // Corrected: Store as 'id'
-                    phone: phone, // Store the full phone number for verification
+                    id: employeeId, // Unique Employee ID
+                    phone: phone, // Full phone number
                     role: 'employee', // Default role
-                    isVerified: false, // Mark as not phone verified initially
-                    branch: 'chennai', // Default branch - TO BE CONFIGURED BY ADMIN
-                    subdivision: 'accounts', // Default subdivision - TO BE CONFIGURED BY ADMIN
+                    isPhoneVerified: false, // OTP will set this to true
+                    branch: document.getElementById("branchSelect").value,
+                    subdivision: document.getElementById("subdivisionSelect").value,
                     joinedDate: new Date().toISOString().slice(0, 10),
                     uid: user.uid,
                     lastLogin: new Date().toISOString(),
-                    boundDevice: currentDeviceId // Store the unique device ID on first signup
+                    boundDevice: currentDeviceId // Generated device fingerprint
                 };
 
                 // ADDED THIS LINE FOR DEBUGGING:
@@ -1464,14 +1464,12 @@
                     errorMessage = "OTP expired. Please resend.";
                     dom.resendOtpBtn.disabled = false;
                 } else if (error.code === 'auth/credential-already-in-use') {
-                    // Specific handling for phone number already linked to another account
-                    console.warn("Auth Error: Phone number already linked to another account.", error);
-                    errorMessage = "This phone number is already linked to another account. Please log in with that account or contact Admin.";
+                    errorMessage = "This phone number is already linked to another account. Please log in with that account or contact support.";
                     showModal('Linking Error', errorMessage, async () => {
-                        await signOut(auth); // Force sign out the current user
-                        toggleAuthView('login'); // Redirect to login
+                        await signOut(auth); // Log out if linking fails due to existing link
+                        toggleAuthView('login');
                     });
-                    return; // Crucial to return after handling this specific error
+                    return;
                 } else if (error.code === 'auth/email-already-in-use') {
                     errorMessage = "This email is already linked to another account.";
                     showModal('Linking Error', errorMessage, async () => {
