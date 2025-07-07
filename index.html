@@ -1407,11 +1407,17 @@
             try {
                 await confirmationResult.confirm(otp);
                 // OTP verified, update user's isVerified status in DB
-                if (auth.currentUser) {
-                    await update(ref(db, 'users/' + auth.currentUser.uid), {
+                // IMPORTANT FIX: Use currentUserData.uid to ensure the update is for the original user
+                if (currentUserData && currentUserData.uid) {
+                    await update(ref(db, 'users/' + currentUserData.uid), {
                         isVerified: true
                     });
                     currentUserData.isVerified = true; // Update local state
+                } else {
+                    console.error("Error: currentUserData or currentUserData.uid is missing during OTP verification.");
+                    showModal('Verification Error', 'Could not identify user for verification update. Please try again.');
+                    await signOut(auth); // Log out to force re-authentication
+                    return;
                 }
 
                 showMessage(dom.otpMessage, 'Phone number verified successfully!', 'success');
