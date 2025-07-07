@@ -767,6 +767,10 @@
                 dom.phoneVerifyForm.classList.remove('hidden');
             } else if (view === 'otp') {
                 dom.otpForm.classList.remove('hidden');
+                // Ensure the recaptcha container is visible before rendering
+                if (dom.recaptchaContainer) {
+                    dom.recaptchaContainer.style.display = 'block'; // Or remove 'hidden' class if it has one
+                }
                 renderRecaptcha(); // Render reCAPTCHA when OTP form is shown
             } else if (view === 'signup') {
                 dom.signupForm.classList.remove('hidden');
@@ -799,17 +803,22 @@
 
         // --- reCAPTCHA Functions ---
         function renderRecaptcha() {
-            if (recaptchaVerifierInstance) {
-                // If already rendered, reset it
-                if (recaptchaWidgetId !== null) {
-                    grecaptcha.reset(recaptchaWidgetId);
-                }
+            // If reCAPTCHA instance already exists and is rendered, just reset it.
+            if (recaptchaVerifierInstance && recaptchaWidgetId !== null) {
+                grecaptcha.reset(recaptchaWidgetId);
                 return;
             }
 
+            // Ensure the container is empty before rendering
             if (dom.recaptchaContainer) {
                 dom.recaptchaContainer.innerHTML = '';
+            } else {
+                console.error("reCAPTCHA container element not found.");
+                return;
             }
+
+            // Ensure the container is visible before rendering
+            dom.recaptchaContainer.style.display = 'block'; // Make sure it's not hidden by CSS
 
             recaptchaVerifierInstance = new RecaptchaVerifier(
                 auth, // ✅ Must come first in Modular SDK
@@ -1455,7 +1464,7 @@
                     errorMessage = "OTP expired. Please resend.";
                     dom.resendOtpBtn.disabled = false;
                 } else if (error.code === 'auth/credential-already-in-use') {
-                    errorMessage = "This phone number is already linked to another account.";
+                    errorMessage = "This phone number is already linked to another account. Please log in with that account or contact support.";
                     showModal('Linking Error', errorMessage, async () => {
                         await signOut(auth); // Log out if linking fails due to existing link
                         toggleAuthView('login');
