@@ -1278,7 +1278,8 @@
             dom.subdivisionSelect.disabled = true;
 
             try {
-                const branchesRef = query(ref(db, 'branches'), orderByKey()); // Order by key for alphabetical branches
+                // Fetch branches and order them by key (alphabetically)
+                const branchesRef = query(ref(db, 'branches'), orderByKey());
                 const snapshot = await get(branchesRef);
 
                 if (snapshot.exists()) {
@@ -1312,9 +1313,10 @@
             if (selectedBranch && branchesData[selectedBranch] && branchesData[selectedBranch].subdivisions) {
                 const subdivisions = branchesData[selectedBranch].subdivisions;
                 let optionsHtml = '<option value="">Select a subdivision</option>';
-                for (const subName in subdivisions) {
+                // Sort subdivisions alphabetically by key
+                Object.keys(subdivisions).sort().forEach(subName => {
                     optionsHtml += `<option value="${subName}">${subName}</option>`;
-                }
+                });
                 dom.subdivisionSelect.innerHTML = optionsHtml;
                 dom.subdivisionSelect.disabled = false;
             } else if (selectedBranch) {
@@ -1329,10 +1331,11 @@
             const employeeId = dom.signupEmployeeIdInput.value;
             const phone = dom.signupPhoneInput.value;
 
-            // --- New: Get selected branch and subdivision with null checks ---
+            // --- Get selected branch and subdivision with null checks ---
             const branch = dom.branchSelect ? dom.branchSelect.value : '';
             const subdivision = dom.subdivisionSelect ? dom.subdivisionSelect.value : '';
 
+            // --- Validate all fields, including branch and subdivision ---
             if (!name || !email || !password || !employeeId || !phone || !branch || !subdivision) {
                 showMessage(dom.signupMessage, 'Please fill in all fields, including branch and subdivision.', 'error');
                 return;
@@ -1377,13 +1380,16 @@
 
                 const today = new Date().toISOString().slice(0, 10);
                 try {
-                    const attendanceRef = ref(db, `attendance/${today}/${branch}/${subdivision}/${employeeId}`); // Use selected branch/subdivision
+                    // Create initial attendance record using the selected branch and subdivision
+                    const attendanceRef = ref(db, `attendance/${today}/${branch}/${subdivision}/${employeeId}`);
                     await set(attendanceRef, {
                         morning: null,
                         afternoon: null
                     });
                 } catch (attendanceError) {
                     console.error("Error setting initial attendance record:", attendanceError);
+                    // This error is less critical for signup success, but should be logged.
+                    // The main user data is still saved.
                 }
 
                 showMessage(dom.signupMessage, 'Signup successful! Please proceed to login.', 'success');
