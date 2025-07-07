@@ -1397,7 +1397,8 @@
                 await set(ref(firebaseDatabase, "users/" + user.uid), newUserData);
 
                 showMessage("Signup successful. Proceeding to phone verification...");
-                showOtpForm(); // Show OTP screen next
+                toggleAuthView('otp');
+                // Show OTP screen next
 
             } catch (error) {
                 console.error("❌ Signup failed:", error);
@@ -1451,6 +1452,7 @@
                 // Execute reCAPTCHA for phone number sign-in
                 const phoneNumber = currentUserData.phone;
                 confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifierInstance);
+                window.verificationId = confirmationResult.verificationId;
                 phoneNumberToVerify = phoneNumber; // Store for OTP resend
 
                 showMessage(dom.phoneVerifyMessage, 'OTP sent to your phone!', 'success');
@@ -1738,6 +1740,14 @@
         });
         function showError(msg) {
             alert("❌ " + msg);
+        }
+        function getOrCreateDeviceId() {
+            let deviceId = localStorage.getItem("device_id");
+            if (!deviceId) {
+                deviceId = "device_" + Date.now() + Math.random().toString(36).substring(2, 10);
+                localStorage.setItem("device_id", deviceId);
+            }
+            return deviceId;
         }
 
     </script>
