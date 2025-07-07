@@ -80,7 +80,8 @@
         input[type="text"],
         input[type="number"],
         input[type="tel"],
-        select { /* Added select to input styling */
+        select {
+            /* Added select to input styling */
             width: 100%;
             padding: 12px 16px;
             border: 1px solid #e2e8f0;
@@ -96,7 +97,8 @@
         input[type="text"]:focus,
         input[type="number"]:focus,
         input[type="tel"]:focus,
-        select:focus { /* Added select to focus styling */
+        select:focus {
+            /* Added select to focus styling */
             outline: none;
             border-color: #3b82f6;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
@@ -508,12 +510,16 @@
                 <!-- Branch Selection -->
                 <div class="form-group">
                     <label for="branchSelect" class="block text-gray-700 text-sm font-semibold mb-2">Branch</label>
-                    <select id="branchSelect" required class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+                    <select id="branchSelect" required
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
                 </div>
                 <!-- Subdivision Selection -->
                 <div class="form-group">
-                    <label for="subdivisionSelect" class="block text-gray-700 text-sm font-semibold mb-2">Subdivision</label>
-                    <select id="subdivisionSelect" required class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" disabled>
+                    <label for="subdivisionSelect"
+                        class="block text-gray-700 text-sm font-semibold mb-2">Subdivision</label>
+                    <select id="subdivisionSelect" required
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled>
                         <option value="">Select a branch first</option>
                     </select>
                 </div>
@@ -1325,91 +1331,68 @@
         }
 
         async function handleSignup() {
-            const name = dom.signupNameInput.value;
-            const email = dom.signupEmailInput.value;
-            const password = dom.signupPasswordInput.value;
-            const employeeId = dom.signupEmployeeIdInput.value;
-            const phone = dom.signupPhoneInput.value;
-
-            // --- Get selected branch and subdivision with null checks ---
-            const branch = dom.branchSelect ? dom.branchSelect.value : '';
-            const subdivision = dom.subdivisionSelect ? dom.subdivisionSelect.value : '';
-
-            // --- Validate all fields, including branch and subdivision ---
-            if (!name || !email || !password || !employeeId || !phone || !branch || !subdivision) {
-                showMessage(dom.signupMessage, 'Please fill in all fields, including branch and subdivision.', 'error');
-                return;
-            }
-            if (password.length < 6) {
-                showMessage(dom.signupMessage, 'Password should be at least 6 characters.', 'error');
-                return;
-            }
-            if (!phone.startsWith('+')) {
-                showMessage(dom.signupMessage, 'Phone number must start with a country code (e.g., +91).', 'error');
-                return;
-            }
-
-            hideMessage(dom.signupMessage);
-            dom.signupBtn.disabled = true;
-
             try {
+                const email = dom.signupEmail.value.trim();
+                const password = dom.signupPassword.value.trim();
+                const name = dom.signupName.value.trim();
+                const phone = dom.signupPhone.value.trim();
+                const employeeId = dom.signupEmployeeId.value.trim();
+
+                // Validate input
+                if (!email || !password || !name || !employeeId) {
+                    showError("Please fill all fields.");
+                    return;
+                }
+
+                console.log("📤 Attempting signup with email:", email);
+
+                // ✅ Actually create Auth user
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
 
-                await generateDeviceId();
+                console.log("✅ Firebase Auth user created:", user.uid);
+
+                const currentDeviceId = getOrCreateDeviceId(); // Ensure device ID exists
+
+                const branch = document.getElementById("branchSelect")?.value;
+                const subdivision = document.getElementById("subdivisionSelect")?.value;
+
+                if (!branch || !subdivision) {
+                    showError("Please select a valid branch and subdivision.");
+                    return;
+                }
 
                 const newUserData = {
                     name: name,
                     email: email,
                     id: employeeId,
                     phone: phone,
-                    role: 'employee',
-                    isVerified: false,
-                    branch: branch, // Use selected branch
-                    subdivision: subdivision, // Use selected subdivision
+                    role: "employee",
+                    isPhoneVerified: false,
+                    branch: branch,
+                    subdivision: subdivision,
                     joinedDate: new Date().toISOString().slice(0, 10),
                     uid: user.uid,
                     lastLogin: new Date().toISOString(),
                     boundDevice: currentDeviceId
                 };
 
-                console.log("Attempting to save new user data to DB:", newUserData);
-                await set(ref(db, 'users/' + user.uid), newUserData);
+                // ✅ Save to Realtime DB after Auth creation
+                await set(ref(firebaseDatabase, "users/" + user.uid), newUserData);
 
-                currentUserData = newUserData;
+                console.log("✅ User data saved to DB under UID:", user.uid);
+                showMessage("Signup complete. Logging in...");
 
-                const today = new Date().toISOString().slice(0, 10);
-                try {
-                    // Create initial attendance record using the selected branch and subdivision
-                    const attendanceRef = ref(db, `attendance/${today}/${branch}/${subdivision}/${employeeId}`);
-                    await set(attendanceRef, {
-                        morning: null,
-                        afternoon: null
-                    });
-                } catch (attendanceError) {
-                    console.error("Error setting initial attendance record:", attendanceError);
-                    // This error is less critical for signup success, but should be logged.
-                    // The main user data is still saved.
-                }
+                // Auth is already signed in → go to app
+                showAppScreen();
 
-                showMessage(dom.signupMessage, 'Signup successful! Please proceed to login.', 'success');
-                showModal('Signup Success', 'Your account has been created. Please log in.');
-                toggleAuthView('login');
             } catch (error) {
-                console.error("Signup error:", error);
-                let errorMessage = "Signup failed.";
-                if (error.code === 'auth/email-already-in-use') {
-                    errorMessage = "Email already registered.";
-                } else if (error.code === 'auth/weak-password') {
-                    errorMessage = "Password is too weak.";
-                }
-                showMessage(dom.signupMessage, errorMessage, 'error');
-            } finally {
-                dom.signupBtn.disabled = false;
+                console.error("❌ Signup failed:", error.message);
+                showError("Signup failed: " + error.message);
             }
         }
 
-        async function handlePhoneVerify() {
+        async function handlePhoneVerify() {a
             const last4Digits = dom.last4DigitsInput.value;
 
             if (!last4Digits || last4Digits.length !== 4) {
