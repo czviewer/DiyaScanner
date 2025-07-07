@@ -1332,7 +1332,7 @@
 
         async function handleSignup() {
             try {
-                const email = dom.signupEmail.value.trim();
+                const email = document.getElementById("signupEmail")?.value.trim();
                 const password = dom.signupPassword.value.trim();
                 const name = dom.signupName.value.trim();
                 const phone = dom.signupPhone.value.trim();
@@ -1392,7 +1392,8 @@
             }
         }
 
-        async function handlePhoneVerify() {a
+        async function handlePhoneVerify() {
+            a
             const last4Digits = dom.last4DigitsInput.value;
 
             if (!last4Digits || last4Digits.length !== 4) {
@@ -1765,6 +1766,14 @@
             // The onAuthStateChanged listener now handles the initial call to checkUserLocationAndAttendance()
             setInterval(updateFormDisablementBasedOnTime, 60000); // Check every minute
         });
+        function showError(msg) {
+            alert("❌ " + msg); // Or replace with your modal logic
+        }
+
+        function showMessage(msg) {
+            alert("✅ " + msg); // Or better styled message box
+        }
+
     </script>
     <!-- Google reCAPTCHA API script -->
     <!-- The onloadCallback is implicitly called by the reCAPTCHA script once it's loaded -->
