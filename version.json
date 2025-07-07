@@ -1,6 +1,6 @@
 {
-  "versionCode": 3,
-  "apkUrl": "https://czviewer.github.io/DiyaScanner/releases/app-v3.apk",
+  "versionCode": 2,
+  "apkUrl": "https://czviewer.github.io/DiyaScanner/releases/DiyaMotorsv2.apk",
   "forceUpdate": true,
   "message": "Critical update: Security patches applied. Update is mandatory."
 }
