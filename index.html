@@ -1464,12 +1464,14 @@
                     errorMessage = "OTP expired. Please resend.";
                     dom.resendOtpBtn.disabled = false;
                 } else if (error.code === 'auth/credential-already-in-use') {
-                    errorMessage = "This phone number is already linked to another account. Please log in with that account or contact support.";
+                    // Specific handling for phone number already linked to another account
+                    console.warn("Auth Error: Phone number already linked to another account.", error);
+                    errorMessage = "This phone number is already linked to another account. Please log in with that account or contact Admin.";
                     showModal('Linking Error', errorMessage, async () => {
-                        await signOut(auth); // Log out if linking fails due to existing link
-                        toggleAuthView('login');
+                        await signOut(auth); // Force sign out the current user
+                        toggleAuthView('login'); // Redirect to login
                     });
-                    return;
+                    return; // Crucial to return after handling this specific error
                 } else if (error.code === 'auth/email-already-in-use') {
                     errorMessage = "This email is already linked to another account.";
                     showModal('Linking Error', errorMessage, async () => {
