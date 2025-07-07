@@ -1353,11 +1353,16 @@
             dom.signupBtn.disabled = true;
 
             try {
-                // Create Auth user first
+                // 1. Firebase Auth user creation must succeed first
                 const userCredential = await createUserWithEmailAndPassword(auth, emailInput, passwordInput);
+
+                // Explicit check for silent failures, though try-catch usually covers this
+                if (!userCredential || !userCredential.user) {
+                    throw new Error("Firebase Auth user creation failed unexpectedly.");
+                }
                 const user = userCredential.user;
 
-                // Generate or get existing device ID
+                // 2. Only after successful Auth creation, continue with device ID and DB writes
                 await generateDeviceId();
 
                 // Initialize newUserData with values from signup form (these are potential fallbacks)
@@ -1393,11 +1398,8 @@
                     if (adminData.des) { // Include 'des' if it exists in admin data
                         newUserData.des = adminData.des;
                     }
-                    // employeeId (id field) is the lookup key, so it remains from input.
-                    // 'role', 'isVerified', 'joinedDate', 'uid', 'lastLogin', 'boundDevice' are managed by the app logic.
                 } else {
                     console.warn(`No pre-assigned admin data found for employee ID: ${employeeIdInput} in branch: ${branchInput}, subdivision: ${subdivisionInput}. Proceeding with user-provided input.`);
-                    // If no admin data, newUserData already holds the user's input, which is the desired fallback.
                 }
 
                 console.log("Final user data to save to DB:", newUserData);
@@ -1432,8 +1434,11 @@
                     errorMessage = "Email already registered.";
                 } else if (error.code === 'auth/weak-password') {
                     errorMessage = "Password is too weak.";
+                } else if (error.message === "Firebase Auth user creation failed unexpectedly.") {
+                    errorMessage = "User creation failed. Please try again.";
                 }
                 showMessage(dom.signupMessage, errorMessage, 'error');
+                // Crucially, no DB writes or progress here if Auth creation failed
             } finally {
                 dom.signupBtn.disabled = false;
             }
@@ -1511,95 +1516,47 @@
         }
 
 
-        async function handleOtpVerification() {
-            const otp = dom.otpInput?.value?.trim();
+       async function handleOtpVerification() {
+  const otp = dom.otpInput.value.trim();
+  if (otp.length !== 6) {
+    showError("Please enter a valid 6-digit OTP.");
+    return;
+  }
 
-            if (!otp || otp.length !== 6) {
-                showMessage(dom.otpMessage, 'Please enter the 6-digit OTP.', 'error');
-                return;
-            }
+  try {
+    const credential = PhoneAuthProvider.credential(window.verificationId, otp);
+    const user = auth.currentUser;
 
-            if (!confirmationResult) {
-                showMessage(dom.otpMessage, 'No OTP request initiated. Please go back and verify phone.', 'error');
-                return;
-            }
+    if (!user) {
+      showError("No user session found. Please login again.");
+      return;
+    }
 
-            hideMessage(dom.otpMessage);
-            dom.verifyOtpBtn.disabled = true;
+    if (!user.phoneNumber) {
+      // ✅ Only link if phone not already linked
+      await linkWithCredential(user, credential);
+      console.log("✅ Phone linked successfully");
+      await update(ref(db, "users/" + user.uid), {
+        isPhoneVerified: true
+      });
+    } else {
+      console.log("⚠️ Phone already linked:", user.phoneNumber);
+    }
 
-            try {
-                // Get the PhoneAuthCredential from the confirmation result
-                const credential = PhoneAuthProvider.credential(confirmationResult.verificationId, otp);
+    showMessage("Phone verification complete!");
+    showAppScreen(); // Or whatever your main screen is
 
-                // Ensure a user is currently signed in before linking
-                const user = auth.currentUser;
-                if (!user) {
-                    showModal('Verification Error', 'No user signed in. Please log in again.', async () => {
-                        await signOut(auth);
-                        toggleAuthView('login');
-                    });
-                    return;
-                }
+  } catch (error) {
+    if (error.code === "auth/provider-already-linked") {
+      console.warn("⚠️ Phone already linked. Skipping linking.");
+      showAppScreen();
+    } else {
+      console.error("❌ OTP verification error:", error);
+      showError("OTP verification failed: " + error.message);
+    }
+  }
+}
 
-                // Link the phone credential to the currently signed-in user
-                await linkWithCredential(user, credential);
-
-                // OTP verified and credential linked, now update user's isVerified status in DB
-                if (currentUserData && currentUserData.uid) {
-                    await update(ref(db, 'users/' + currentUserData.uid), {
-                        isVerified: true
-                    });
-                    currentUserData.isVerified = true; // Update local state
-                } else {
-                    console.error("Error: currentUserData or currentUserData.uid is missing after OTP verification.");
-                    showModal('Verification Error', 'Could not identify user for verification update. Please try again.');
-                    await signOut(auth); // Log out to force re-authentication
-                    return;
-                }
-
-                showMessage(dom.otpMessage, 'Phone number verified successfully!', 'success');
-                showModal('Verification Success', 'Your phone number has been verified. Welcome!');
-                // Automatically transition to app screen after successful verification
-                dom.authScreens.classList.add('hidden');
-                dom.appScreen.classList.remove('hidden');
-                checkUserLocationAndAttendance(); // Check location after successful login/verification
-            } catch (error) {
-                console.error("OTP verification error:", error);
-                let errorMessage = "OTP verification failed. Please try again.";
-                if (error.code === 'auth/invalid-verification-code') {
-                    errorMessage = "Invalid OTP. Please check and try again.";
-                } else if (error.code === 'auth/code-expired') {
-                    errorMessage = "OTP expired. Please resend.";
-                    dom.resendOtpBtn.disabled = false;
-                } else if (error.code === 'auth/credential-already-in-use') {
-                    // Specific handling for phone number already linked to another account
-                    console.warn("Auth Error: Phone number already linked to another account.", error);
-                    errorMessage = "This phone number is already linked to another account. Please log in with that account or contact Admin.";
-                    showModal('Linking Error', errorMessage, async () => {
-                        await signOut(auth); // Force sign out the current user
-                        toggleAuthView('login'); // Redirect to login
-                    });
-                    return; // Crucial to return after handling this specific error
-                } else if (error.code === 'auth/email-already-in-use') {
-                    errorMessage = "This email is already linked to another account.";
-                    showModal('Linking Error', errorMessage, async () => {
-                        await signOut(auth); // Log out if linking fails due to existing link
-                        toggleAuthView('login');
-                    });
-                    return;
-                } else if (error.code === 'auth/no-current-user') {
-                    errorMessage = "No user signed in to link the phone number to. Please log in again.";
-                    showModal('Login Required', errorMessage, async () => {
-                        await signOut(auth);
-                        toggleAuthView('login');
-                    });
-                    return;
-                }
-                showMessage(dom.otpMessage, errorMessage, 'error');
-            } finally {
-                dom.verifyOtpBtn.disabled = false;
-            }
-        }
 
         async function handleResendOtp() {
             if (!phoneNumberToVerify) {
