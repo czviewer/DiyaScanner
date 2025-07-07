@@ -80,7 +80,8 @@
         input[type="text"],
         input[type="number"],
         input[type="tel"],
-        select { /* Added select to input styling */
+        select {
+            /* Added select to input styling */
             width: 100%;
             padding: 12px 16px;
             border: 1px solid #e2e8f0;
@@ -96,7 +97,8 @@
         input[type="text"]:focus,
         input[type="number"]:focus,
         input[type="tel"]:focus,
-        select:focus { /* Added select to focus styling */
+        select:focus {
+            /* Added select to focus styling */
             outline: none;
             border-color: #3b82f6;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
@@ -508,12 +510,16 @@
                 <!-- Branch Selection -->
                 <div class="form-group">
                     <label for="branchSelect" class="block text-gray-700 text-sm font-semibold mb-2">Branch</label>
-                    <select id="branchSelect" required class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+                    <select id="branchSelect" required
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
                 </div>
                 <!-- Subdivision Selection -->
                 <div class="form-group">
-                    <label for="subdivisionSelect" class="block text-gray-700 text-sm font-semibold mb-2">Subdivision</label>
-                    <select id="subdivisionSelect" required class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" disabled>
+                    <label for="subdivisionSelect"
+                        class="block text-gray-700 text-sm font-semibold mb-2">Subdivision</label>
+                    <select id="subdivisionSelect" required
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled>
                         <option value="">Select a branch first</option>
                     </select>
                 </div>
@@ -734,12 +740,21 @@
 
 
         // --- Utility Functions ---
-        function showMessage(element, message, type) {
-            if (!element) return;
-            element.textContent = message;
-            element.classList.remove('hidden', 'error', 'success');
-            element.classList.add(type);
+        function showMessage(targetOrText, msg, type = "success") {
+            if (typeof targetOrText === "string" && !msg) {
+                alert("✅ " + targetOrText); // fallback: just show alert
+                return;
+            }
+
+            if (!targetOrText || !targetOrText.textContent) {
+                alert("✅ " + msg);
+                return;
+            }
+
+            targetOrText.textContent = msg;
+            targetOrText.className = type === "error" ? "error-msg" : "success-msg";
         }
+
 
         function hideMessage(element) {
             if (!element) return;
@@ -1325,122 +1340,74 @@
         }
 
         async function handleSignup() {
-            const nameInput = dom.signupNameInput?.value?.trim();
-            const emailInput = dom.signupEmailInput?.value?.trim();
-            const passwordInput = dom.signupPasswordInput?.value?.trim();
-            const employeeIdInput = dom.signupEmployeeIdInput?.value?.trim();
-            const phoneInput = dom.signupPhoneInput?.value?.trim();
+            const name = document.getElementById("signup-name")?.value?.trim();
+            const email = document.getElementById("signup-email")?.value?.trim();
+            const password = document.getElementById("signup-password")?.value?.trim();
+            const phone = document.getElementById("signup-phone")?.value?.trim();
+            const employeeId = document.getElementById("signup-employee-id")?.value?.trim();
+            const branch = document.getElementById("branchSelect")?.value?.trim();
+            const subdivision = document.getElementById("subdivisionSelect")?.value?.trim();
 
-            // --- Get selected branch and subdivision with null/empty checks ---
-            const branchInput = dom.branchSelect?.value?.trim();
-            const subdivisionInput = dom.subdivisionSelect?.value?.trim();
-
-            // --- Validate all fields, including branch and subdivision ---
-            if (!nameInput || !emailInput || !passwordInput || !employeeIdInput || !phoneInput || !branchInput || !subdivisionInput) {
-                showMessage(dom.signupMessage, 'Please fill in all fields, including branch and subdivision.', 'error');
+            if (!email || !password || !employeeId || !branch || !subdivision) {
+                showError("Please fill all required fields.");
                 return;
             }
-            if (passwordInput.length < 6) {
-                showMessage(dom.signupMessage, 'Password should be at least 6 characters.', 'error');
-                return;
-            }
-            if (!phoneInput.startsWith('+')) {
-                showMessage(dom.signupMessage, 'Phone number must start with a country code (e.g., +91).', 'error');
-                return;
-            }
-
-            hideMessage(dom.signupMessage);
-            dom.signupBtn.disabled = true;
 
             try {
-                // 1. Firebase Auth user creation must succeed first
-                const userCredential = await createUserWithEmailAndPassword(auth, emailInput, passwordInput);
-
-                // Explicit check for silent failures, though try-catch usually covers this
-                if (!userCredential || !userCredential.user) {
-                    throw new Error("Firebase Auth user creation failed unexpectedly.");
-                }
+                // ✅ Step 1: Create Firebase Auth user
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
 
-                // 2. Only after successful Auth creation, continue with device ID and DB writes
-                await generateDeviceId();
+                if (!user || !user.uid) {
+                    showError("Signup failed. UID not returned.");
+                    return;
+                }
 
-                // Initialize newUserData with values from signup form (these are potential fallbacks)
-                let newUserData = {
-                    name: nameInput,
-                    email: emailInput,
-                    id: employeeIdInput,
-                    phone: phoneInput,
-                    role: 'employee', // Default role
-                    isVerified: false, // Phone verification status, initially false
-                    branch: branchInput, // Initially from user input
-                    subdivision: subdivisionInput, // Initially from user input
+                const currentDeviceId = getOrCreateDeviceId();
+
+                // ✅ Step 2: Fetch admin-assigned fields
+                let adminData = {};
+                try {
+                    const empSnap = await get(ref(firebaseDatabase, `branches/${branch}/subdivisions/${subdivision}/employees/${employeeId}`));
+                    if (empSnap.exists()) {
+                        adminData = empSnap.val();
+                    }
+                } catch (err) {
+                    console.warn("⚠️ Admin data fetch failed or not found.");
+                }
+
+                // ✅ Step 3: Build final merged user data
+                const newUserData = {
+                    name: adminData.name || name || "Unnamed",
+                    email: adminData.email || email || "",
+                    phone: adminData.phone || phone || "",
+                    des: adminData.des || "",
+                    id: employeeId,
+                    role: "employee",
+                    isPhoneVerified: false,
+                    branch: adminData.branch || branch,
+                    subdivision: adminData.subdivision || subdivision,
                     joinedDate: new Date().toISOString().slice(0, 10),
                     uid: user.uid,
                     lastLogin: new Date().toISOString(),
                     boundDevice: currentDeviceId
                 };
 
-                // 3. Fetch admin-defined employee data
-                const adminEmployeeRef = ref(db, `branches/${branchInput}/subdivisions/${subdivisionInput}/employees/${employeeIdInput}`);
-                const adminSnapshot = await get(adminEmployeeRef);
+                // ✅ Step 4: Save to Realtime Database
+                await set(ref(firebaseDatabase, "users/" + user.uid), newUserData);
 
-                if (adminSnapshot.exists()) {
-                    const adminData = adminSnapshot.val();
-                    console.log("Admin pre-assigned data found:", adminData);
+                showMessage("Signup successful. Proceeding to phone verification...");
+                showOtpForm(); // Show OTP screen next
 
-                    // Merge logic: Admin data takes precedence, fallback to employee input if admin field is missing
-                    newUserData.name = adminData.name || newUserData.name;
-                    newUserData.email = adminData.email || newUserData.email;
-                    newUserData.phone = adminData.phone || newUserData.phone;
-                    newUserData.branch = adminData.branch || newUserData.branch; // Admin-defined branch takes precedence
-                    newUserData.subdivision = adminData.subdivision || newUserData.subdivision; // Admin-defined subdivision takes precedence
-                    if (adminData.des) { // Include 'des' if it exists in admin data
-                        newUserData.des = adminData.des;
-                    }
-                } else {
-                    console.warn(`No pre-assigned admin data found for employee ID: ${employeeIdInput} in branch: ${branchInput}, subdivision: ${subdivisionInput}. Proceeding with user-provided input.`);
-                }
-
-                console.log("Final user data to save to DB:", newUserData);
-
-                // 4. Save merged user data to Realtime DB
-                await set(ref(db, 'users/' + user.uid), newUserData);
-
-                // Update global state with the final merged user data
-                currentUserData = newUserData;
-
-                // 5. Create initial attendance record using the merged branch and subdivision
-                const today = new Date().toISOString().slice(0, 10);
-                try {
-                    const attendanceRef = ref(db, `attendance/${today}/${newUserData.branch}/${newUserData.subdivision}/${newUserData.id}`);
-                    await set(attendanceRef, {
-                        morning: null,
-                        afternoon: null
-                    });
-                } catch (attendanceError) {
-                    console.error("Error setting initial attendance record:", attendanceError);
-                    // This error is less critical for signup success, but should be logged.
-                    // The main user data is still saved.
-                }
-
-                showMessage(dom.signupMessage, 'Signup successful! Please proceed to login.', 'success');
-                showModal('Signup Success', 'Your account has been created. Please log in.');
-                toggleAuthView('login');
             } catch (error) {
-                console.error("Signup error:", error);
-                let errorMessage = "Signup failed.";
-                if (error.code === 'auth/email-already-in-use') {
-                    errorMessage = "Email already registered.";
-                } else if (error.code === 'auth/weak-password') {
-                    errorMessage = "Password is too weak.";
-                } else if (error.message === "Firebase Auth user creation failed unexpectedly.") {
-                    errorMessage = "User creation failed. Please try again.";
+                console.error("❌ Signup failed:", error);
+                if (error.code === "auth/email-already-in-use") {
+                    showError("This email is already registered.");
+                } else if (error.code === "auth/weak-password") {
+                    showError("Password too weak. Please use a stronger password.");
+                } else {
+                    showError("Signup failed: " + error.message);
                 }
-                showMessage(dom.signupMessage, errorMessage, 'error');
-                // Crucially, no DB writes or progress here if Auth creation failed
-            } finally {
-                dom.signupBtn.disabled = false;
             }
         }
 
@@ -1516,46 +1483,46 @@
         }
 
 
-       async function handleOtpVerification() {
-  const otp = dom.otpInput.value.trim();
-  if (otp.length !== 6) {
-    showError("Please enter a valid 6-digit OTP.");
-    return;
-  }
+        async function handleOtpVerification() {
+            const otp = dom.otpInput.value.trim();
+            if (otp.length !== 6) {
+                showError("Please enter a valid 6-digit OTP.");
+                return;
+            }
 
-  try {
-    const credential = PhoneAuthProvider.credential(window.verificationId, otp);
-    const user = auth.currentUser;
+            try {
+                const credential = PhoneAuthProvider.credential(window.verificationId, otp);
+                const user = auth.currentUser;
 
-    if (!user) {
-      showError("No user session found. Please login again.");
-      return;
-    }
+                if (!user) {
+                    showError("No user session found. Please login again.");
+                    return;
+                }
 
-    if (!user.phoneNumber) {
-      // ✅ Only link if phone not already linked
-      await linkWithCredential(user, credential);
-      console.log("✅ Phone linked successfully");
-      await update(ref(db, "users/" + user.uid), {
-        isPhoneVerified: true
-      });
-    } else {
-      console.log("⚠️ Phone already linked:", user.phoneNumber);
-    }
+                if (!user.phoneNumber) {
+                    // ✅ Only link if phone not already linked
+                    await linkWithCredential(user, credential);
+                    console.log("✅ Phone linked successfully");
+                    await update(ref(db, "users/" + user.uid), {
+                        isPhoneVerified: true
+                    });
+                } else {
+                    console.log("⚠️ Phone already linked:", user.phoneNumber);
+                }
 
-    showMessage("Phone verification complete!");
-    showAppScreen(); // Or whatever your main screen is
+                showMessage("Phone verification complete!");
+                showAppScreen(); // Or whatever your main screen is
 
-  } catch (error) {
-    if (error.code === "auth/provider-already-linked") {
-      console.warn("⚠️ Phone already linked. Skipping linking.");
-      showAppScreen();
-    } else {
-      console.error("❌ OTP verification error:", error);
-      showError("OTP verification failed: " + error.message);
-    }
-  }
-}
+            } catch (error) {
+                if (error.code === "auth/provider-already-linked") {
+                    console.warn("⚠️ Phone already linked. Skipping linking.");
+                    showAppScreen();
+                } else {
+                    console.error("❌ OTP verification error:", error);
+                    showError("OTP verification failed: " + error.message);
+                }
+            }
+        }
 
 
         async function handleResendOtp() {
@@ -1769,6 +1736,10 @@
             // The onAuthStateChanged listener now handles the initial call to checkUserLocationAndAttendance()
             setInterval(updateFormDisablementBasedOnTime, 60000); // Check every minute
         });
+        function showError(msg) {
+            alert("❌ " + msg);
+        }
+
     </script>
     <!-- Google reCAPTCHA API script -->
     <!-- The onloadCallback is implicitly called by the reCAPTCHA script once it's loaded -->
