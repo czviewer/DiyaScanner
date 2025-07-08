@@ -30,15 +30,20 @@
             width: 100%;
             height: 100%;
             /* IMPORTANT: Ensure this URL matches the one in the JavaScript for caching */
-            background-image: url('https://cdn.imgchest.com/files/y8xcnkao8r4.png'); /* Using a real image URL */
-            background-size: cover; /* Ensures the image covers the entire splash screen */
-            background-position: center; /* Centers the background image */
-            background-repeat: no-repeat; /* Prevents the image from repeating */
+            background-image: url('https://placehold.co/1920x1080/E0E0E0/333333?text=Your+Background+Image');
+            /* Using a real image URL */
+            background-size: cover;
+            /* Ensures the image covers the entire splash screen */
+            background-position: center;
+            /* Centers the background image */
+            background-repeat: no-repeat;
+            /* Prevents the image from repeating */
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 10000; /* Ensure it's on top of everything */
+            z-index: 10000;
+            /* Ensure it's on top of everything */
             opacity: 1;
             visibility: visible;
             transition: opacity 0.7s ease-out, visibility 0.7s ease-out;
@@ -47,12 +52,14 @@
         #splash-screen.hidden {
             opacity: 0;
             visibility: hidden;
-            pointer-events: none; /* Allows clicks through once hidden */
+            pointer-events: none;
+            /* Allows clicks through once hidden */
         }
 
         .loading-spinner {
             border: 4px solid rgba(0, 0, 0, 0.1);
-            border-top: 4px solid #2563eb; /* Using your primary brand color for the spinner */
+            border-top: 4px solid #2563eb;
+            /* Using your primary brand color for the spinner */
             border-radius: 50%;
             width: 50px;
             height: 50px;
@@ -60,35 +67,51 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         /* General HTML and Body styling */
-        html, body {
+        html,
+        body {
             width: 100%;
             height: 100%;
             margin: 0;
             padding: 0;
-            overflow-x: hidden; /* Prevent horizontal scrollbar */
+            overflow-x: hidden;
+            /* Prevent horizontal scrollbar */
         }
 
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f0f2f5;
             color: #333;
+            position: relative;
+            /* Added to ensure proper stacking context for fixed elements if needed */
             /* Removed flex properties and min-height from here */
         }
 
         /* Apply centering and min-height to the main content container */
         #main-content {
-            display: flex; /* Make it a flex container to center its children */
-            justify-content: center; /* Center horizontally */
-            align-items: center; /* Center vertically */
-            min-height: 100vh; /* Take full viewport height */
-            padding: 16px; /* Keep your original body padding here */
-            width: 100%; /* Ensure it takes full width */
-            box-sizing: border-box; /* Include padding in width/height calculation */
+            display: flex;
+            /* Make it a flex container to center its children */
+            justify-content: center;
+            /* Center horizontally */
+            align-items: center;
+            /* Center vertically */
+            min-height: 100vh;
+            /* Take full viewport height */
+            padding: 16px;
+            /* Keep your original body padding here */
+            width: 100%;
+            /* Ensure it takes full width */
+            box-sizing: border-box;
+            /* Include padding in width/height calculation */
         }
 
         /* Base card/container styles */
@@ -479,7 +502,7 @@
 <body>
     <!-- Splash Screen -->
     <div id="splash-screen">
-        <img src="https://cdn.imgchest.com/files/7kzcabxmoq7.jpg" alt="Diya-Hero Logo"
+        <img src="https://placehold.co/150x150/0000FF/FFFFFF?text=Diya-Hero" alt="Diya-Hero Logo"
             style="max-width: 150px; border-radius: 8px;">
         <div class="loading-spinner mt-8"></div>
         <p style="margin-top: 20px; color: #555; font-size: 1.1rem;">Loading your attendance app...</p>
@@ -676,6 +699,122 @@
         // Splash screen logic
         let splashScreenFullyHidden = false; // New global flag
 
+        // --- DOM Elements (initialized in getDomElements) ---
+        const dom = {};
+
+        function getDomElements() {
+            dom.authScreens = document.getElementById('auth-screens');
+            dom.appScreen = document.getElementById('app-screen');
+
+            // Login Form Elements
+            dom.loginForm = document.getElementById('login-form');
+            dom.loginEmailInput = document.getElementById('login-email');
+            dom.loginPasswordInput = document.getElementById('login-password');
+            dom.loginBtn = document.getElementById('login-btn');
+            dom.showSignupBtn = document.getElementById('show-signup-btn');
+            dom.loginMessage = document.getElementById('login-message');
+
+            // Phone Verification Form Elements
+            dom.phoneVerifyForm = document.getElementById('phone-verify-form');
+            dom.last4DigitsInput = document.getElementById('last-4-digits');
+            dom.verifyPhoneBtn = document.getElementById('verify-phone-btn');
+            dom.backToLoginBtn = document.getElementById('back-to-login-btn');
+            dom.phoneVerifyMessage = document.getElementById('phone-verify-message');
+
+            // OTP Verification Form Elements
+            dom.otpForm = document.getElementById('otp-form');
+            dom.otpInput = document.getElementById('otp-input');
+            dom.verifyOtpBtn = document.getElementById('verify-otp-btn');
+            dom.resendOtpBtn = document.getElementById('resend-otp-btn');
+            dom.countdownTimer = document.getElementById('countdown-timer');
+            dom.recaptchaContainer = document.getElementById('recaptcha-container');
+            dom.otpMessage = document.getElementById('otp-message');
+
+            // Signup Form Elements
+            dom.signupForm = document.getElementById('signup-form');
+            dom.signupNameInput = document.getElementById('signup-name');
+            dom.signupEmailInput = document.getElementById('signup-email');
+            dom.signupPasswordInput = document.getElementById('signup-password');
+            dom.signupEmployeeIdInput = document.getElementById('signup-employee-id');
+            dom.signupPhoneInput = document.getElementById('signup-phone');
+            dom.branchSelect = document.getElementById('branchSelect'); // New DOM element
+            dom.subdivisionSelect = document.getElementById('subdivisionSelect'); // New DOM element
+            dom.signupBtn = document.getElementById('signup-btn');
+            dom.showLoginBtn = document.getElementById('show-login-btn');
+            dom.signupMessage = document.getElementById('signup-message');
+
+            // App Screen Elements
+            dom.logoutBtn = document.getElementById('logout-btn');
+            dom.userDisplayName = document.getElementById('user-display-name');
+            dom.locationStatus = document.getElementById('location-status');
+            dom.locationMessage = document.getElementById('location-message');
+            dom.attendanceSection = document.getElementById('attendance-section');
+            dom.morningCheck = document.getElementById('morning-check');
+            dom.anEnters = document.getElementById('an-enters');
+            dom.anLeaves = document.getElementById('an-leaves');
+            dom.anNone = document.getElementById('an-none');
+            dom.refreshLocationBtn = document.getElementById('refresh-location-btn');
+            dom.submitAttendanceBtn = document.getElementById('submit-attendance-btn');
+            dom.attendanceMessage = document.getElementById('attendance-message');
+
+            // Modal Elements
+            dom.messageModalOverlay = document.getElementById('message-modal-overlay');
+            dom.modalTitle = document.getElementById('modal-title');
+            dom.modalMessage = document.getElementById('modal-message');
+            dom.modalCloseBtn = document.querySelector('#message-modal-overlay .modal-close-btn');
+            dom.modalOkBtn = document.querySelector('#message-modal-overlay .btn-primary');
+        }
+
+        // New function to initialize main app content and event listeners
+        function initializeMainAppContent() {
+            // Attach event listeners for primary actions
+            if (dom.loginBtn) dom.loginBtn.addEventListener('click', handleLogin);
+            if (dom.verifyPhoneBtn) dom.verifyPhoneBtn.addEventListener('click', handlePhoneVerify);
+            if (dom.verifyOtpBtn) dom.verifyOtpBtn.addEventListener('click', handleOtpVerification);
+            if (dom.resendOtpBtn) dom.resendOtpBtn.addEventListener('click', handleResendOtp);
+            if (dom.signupBtn) dom.signupBtn.addEventListener('click', handleSignup);
+            if (dom.logoutBtn) dom.logoutBtn.addEventListener('click', handleLogout);
+
+            // Toggle authentication views
+            if (dom.showSignupBtn) dom.showSignupBtn.addEventListener('click', () => toggleAuthView('signup'));
+            if (dom.showLoginBtn) dom.showLoginBtn.addEventListener('click', () => toggleAuthView('login'));
+            if (dom.backToLoginBtn) dom.backToLoginBtn.addEventListener('click', () => toggleAuthView('login'));
+
+            // New: Add event listeners for branch and subdivision dropdowns
+            if (dom.branchSelect) {
+                dom.branchSelect.addEventListener('change', (event) => {
+                    populateSubdivisionsDropdown(event.target.value);
+                });
+            }
+
+            // Attach event listeners for attendance form changes
+            if (dom.refreshLocationBtn) dom.refreshLocationBtn.addEventListener('click', checkUserLocationAndAttendance);
+            if (dom.morningCheck) dom.morningCheck.addEventListener('change', updateFormDisablementBasedOnTime);
+            if (dom.anEnters) dom.anEnters.addEventListener('change', updateFormDisablementBasedOnTime);
+            if (dom.anLeaves) dom.anLeaves.addEventListener('change', updateFormDisablementBasedOnTime);
+            if (dom.anNone) dom.anNone.addEventListener('change', updateFormDisablementBasedOnTime);
+            if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.addEventListener('click', submitAttendance);
+
+            // Start the location check interval
+            setInterval(updateFormDisablementBasedOnTime, 60000); // Check every minute
+
+            // Manually trigger the onAuthStateChanged logic if it hasn't been processed yet
+            // This ensures the current user's state is evaluated immediately after splash screen
+            // and event listeners are set up.
+            if (!isAuthListenerInitialized && auth.currentUser) {
+                // If a user is already signed in (e.g., from a previous session due to persistence),
+                // we manually trigger the auth state processing.
+                onAuthStateChanged(auth, (user) => {
+                    // This callback will now respect the splashScreenFullyHidden flag
+                    // and ensure the UI is updated only when ready.
+                });
+            } else if (!auth.currentUser) {
+                // If no user is signed in, ensure login view is shown
+                toggleAuthView('login');
+            }
+        }
+
+
         window.addEventListener('load', function () {
             const splashScreen = document.getElementById('splash-screen');
             const mainContent = document.getElementById('main-content');
@@ -787,73 +926,6 @@
 
         // Store fetched branches data
         let branchesData = {};
-
-        // --- DOM Elements (initialized in getDomElements) ---
-        const dom = {};
-
-        function getDomElements() {
-            dom.authScreens = document.getElementById('auth-screens');
-            dom.appScreen = document.getElementById('app-screen');
-
-            // Login Form Elements
-            dom.loginForm = document.getElementById('login-form');
-            dom.loginEmailInput = document.getElementById('login-email');
-            dom.loginPasswordInput = document.getElementById('login-password');
-            dom.loginBtn = document.getElementById('login-btn');
-            dom.showSignupBtn = document.getElementById('show-signup-btn');
-            dom.loginMessage = document.getElementById('login-message');
-
-            // Phone Verification Form Elements
-            dom.phoneVerifyForm = document.getElementById('phone-verify-form');
-            dom.last4DigitsInput = document.getElementById('last-4-digits');
-            dom.verifyPhoneBtn = document.getElementById('verify-phone-btn');
-            dom.backToLoginBtn = document.getElementById('back-to-login-btn');
-            dom.phoneVerifyMessage = document.getElementById('phone-verify-message');
-
-            // OTP Verification Form Elements
-            dom.otpForm = document.getElementById('otp-form');
-            dom.otpInput = document.getElementById('otp-input');
-            dom.verifyOtpBtn = document.getElementById('verify-otp-btn');
-            dom.resendOtpBtn = document.getElementById('resend-otp-btn');
-            dom.countdownTimer = document.getElementById('countdown-timer');
-            dom.recaptchaContainer = document.getElementById('recaptcha-container');
-            dom.otpMessage = document.getElementById('otp-message');
-
-            // Signup Form Elements
-            dom.signupForm = document.getElementById('signup-form');
-            dom.signupNameInput = document.getElementById('signup-name');
-            dom.signupEmailInput = document.getElementById('signup-email');
-            dom.signupPasswordInput = document.getElementById('signup-password');
-            dom.signupEmployeeIdInput = document.getElementById('signup-employee-id');
-            dom.signupPhoneInput = document.getElementById('signup-phone');
-            dom.branchSelect = document.getElementById('branchSelect'); // New DOM element
-            dom.subdivisionSelect = document.getElementById('subdivisionSelect'); // New DOM element
-            dom.signupBtn = document.getElementById('signup-btn');
-            dom.showLoginBtn = document.getElementById('show-login-btn');
-            dom.signupMessage = document.getElementById('signup-message');
-
-            // App Screen Elements
-            dom.logoutBtn = document.getElementById('logout-btn');
-            dom.userDisplayName = document.getElementById('user-display-name');
-            dom.locationStatus = document.getElementById('location-status');
-            dom.locationMessage = document.getElementById('location-message');
-            dom.attendanceSection = document.getElementById('attendance-section');
-            dom.morningCheck = document.getElementById('morning-check');
-            dom.anEnters = document.getElementById('an-enters');
-            dom.anLeaves = document.getElementById('an-leaves');
-            dom.anNone = document.getElementById('an-none');
-            dom.refreshLocationBtn = document.getElementById('refresh-location-btn');
-            dom.submitAttendanceBtn = document.getElementById('submit-attendance-btn');
-            dom.attendanceMessage = document.getElementById('attendance-message');
-
-            // Modal Elements
-            dom.messageModalOverlay = document.getElementById('message-modal-overlay');
-            dom.modalTitle = document.getElementById('modal-title');
-            dom.modalMessage = document.getElementById('modal-message');
-            dom.modalCloseBtn = document.querySelector('#message-modal-overlay .modal-close-btn');
-            dom.modalOkBtn = document.querySelector('#message-modal-overlay .btn-primary');
-        }
-
 
         // --- Utility Functions ---
         function showMessage(element, message, type) {
@@ -1137,7 +1209,10 @@
                         });
                     });
 
-                    const { latitude, longitude } = position.coords;
+                    const {
+                        latitude,
+                        longitude
+                    } = position.coords;
                     console.log(`Current Location: ${latitude}, ${longitude}`);
 
                     const branchRef = ref(db, `branches/${currentUserData.branch}`);
@@ -1840,55 +1915,6 @@
             }
         }
 
-        // New function to initialize main app content and event listeners
-        function initializeMainAppContent() {
-            // Attach event listeners for primary actions
-            if (dom.loginBtn) dom.loginBtn.addEventListener('click', handleLogin);
-            if (dom.verifyPhoneBtn) dom.verifyPhoneBtn.addEventListener('click', handlePhoneVerify);
-            if (dom.verifyOtpBtn) dom.verifyOtpBtn.addEventListener('click', handleOtpVerification);
-            if (dom.resendOtpBtn) dom.resendOtpBtn.addEventListener('click', handleResendOtp);
-            if (dom.signupBtn) dom.signupBtn.addEventListener('click', handleSignup);
-            if (dom.logoutBtn) dom.logoutBtn.addEventListener('click', handleLogout);
-
-            // Toggle authentication views
-            if (dom.showSignupBtn) dom.showSignupBtn.addEventListener('click', () => toggleAuthView('signup'));
-            if (dom.showLoginBtn) dom.showLoginBtn.addEventListener('click', () => toggleAuthView('login'));
-            if (dom.backToLoginBtn) dom.backToLoginBtn.addEventListener('click', () => toggleAuthView('login'));
-
-            // New: Add event listeners for branch and subdivision dropdowns
-            if (dom.branchSelect) {
-                dom.branchSelect.addEventListener('change', (event) => {
-                    populateSubdivisionsDropdown(event.target.value);
-                });
-            }
-
-            // Attach event listeners for attendance form changes
-            if (dom.refreshLocationBtn) dom.refreshLocationBtn.addEventListener('click', checkUserLocationAndAttendance);
-            if (dom.morningCheck) dom.morningCheck.addEventListener('change', updateFormDisablementBasedOnTime);
-            if (dom.anEnters) dom.anEnters.addEventListener('change', updateFormDisablementBasedOnTime);
-            if (dom.anLeaves) dom.anLeaves.addEventListener('change', updateFormDisablementBasedOnTime);
-            if (dom.anNone) dom.anNone.addEventListener('change', updateFormDisablementBasedOnTime);
-            if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.addEventListener('click', submitAttendance);
-
-            // Start the location check interval
-            setInterval(updateFormDisablementBasedOnTime, 60000); // Check every minute
-
-            // Manually trigger the onAuthStateChanged logic if it hasn't been processed yet
-            // This ensures the current user's state is evaluated immediately after splash screen
-            // and event listeners are set up.
-            if (!isAuthListenerInitialized && auth.currentUser) {
-                // If a user is already signed in (e.g., from a previous session due to persistence),
-                // we manually trigger the auth state processing.
-                onAuthStateChanged(auth, (user) => {
-                    // This callback will now respect the splashScreenFullyHidden flag
-                    // and ensure the UI is updated only when ready.
-                });
-            } else if (!auth.currentUser) {
-                // If no user is signed in, ensure login view is shown
-                toggleAuthView('login');
-            }
-        }
-
 
         // --- Main Auth State Observer ---
         onAuthStateChanged(auth, async (user) => {
@@ -2043,7 +2069,7 @@
             getDomElements(); // Initialize DOM elements first
 
             // Pre-cache the splash screen background image
-            const splashScreenImageUrl = 'https://cdn.imgchest.com/files/y8xcnkao8r4.png'; // IMPORTANT: This URL must match the CSS background-image URL
+            const splashScreenImageUrl = 'https://placehold.co/1920x1080/E0E0E0/333333?text=Your+Background+Image'; // IMPORTANT: This URL must match the CSS background-image URL
             try {
                 if ('caches' in window) { // Check if Cache API is supported
                     const cache = await caches.open('splash-screen-assets');
