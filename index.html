@@ -22,96 +22,16 @@
             overflow-y: scroll;
         }
 
-        /* Splash Screen Styles */
-        #splash-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            /* IMPORTANT: Ensure this URL matches the one in the JavaScript for caching */
-            background-image: url('https://placehold.co/1920x1080/E0E0E0/333333?text=Your+Background+Image');
-            /* Using a real image URL */
-            background-size: cover;
-            /* Ensures the image covers the entire splash screen */
-            background-position: center;
-            /* Centers the background image */
-            background-repeat: no-repeat;
-            /* Prevents the image from repeating */
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-            /* Ensure it's on top of everything */
-            opacity: 1;
-            visibility: visible;
-            transition: opacity 0.7s ease-out, visibility 0.7s ease-out;
-        }
-
-        #splash-screen.hidden {
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-            /* Allows clicks through once hidden */
-        }
-
-        .loading-spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            border-top: 4px solid #2563eb;
-            /* Using your primary brand color for the spinner */
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* General HTML and Body styling */
-        html,
-        body {
-            width: 100%;
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            overflow-x: hidden;
-            /* Prevent horizontal scrollbar */
-        }
-
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f0f2f5;
-            color: #333;
-            position: relative;
-            /* Added to ensure proper stacking context for fixed elements if needed */
-            /* Removed flex properties and min-height from here */
-        }
-
-        /* Apply centering and min-height to the main content container */
-        #main-content {
             display: flex;
-            /* Make it a flex container to center its children */
             justify-content: center;
-            /* Center horizontally */
             align-items: center;
-            /* Center vertically */
             min-height: 100vh;
-            /* Take full viewport height */
+            margin: 0;
+            color: #333;
             padding: 16px;
-            /* Keep your original body padding here */
-            width: 100%;
-            /* Ensure it takes full width */
-            box-sizing: border-box;
-            /* Include padding in width/height calculation */
         }
 
         /* Base card/container styles */
@@ -500,204 +420,258 @@
 </head>
 
 <body>
-    <!-- Splash Screen -->
-    <div id="splash-screen">
-        <img src="https://placehold.co/150x150/0000FF/FFFFFF?text=Diya-Hero" alt="Diya-Hero Logo"
-            style="max-width: 150px; border-radius: 8px;">
-        <div class="loading-spinner mt-8"></div>
-        <p style="margin-top: 20px; color: #555; font-size: 1.1rem;">Loading your attendance app...</p>
-    </div>
+    <!-- Main Application Wrapper -->
+    <div id="app-wrapper" class="w-full flex justify-center items-center">
 
-    <!-- Main Content Wrapper (initially hidden) -->
-    <div id="main-content" style="display: none;">
-        <!-- Main Application Wrapper -->
-        <div id="app-wrapper" class="w-full flex justify-center items-center">
+        <!-- Authentication Screens (Login, Phone Verify, OTP, Signup) -->
+        <div id="auth-screens" class="card">
+            <h1 class="text-2xl sm:text-3xl font-bold text-blue-800 text-center mb-4">Diya-Hero Self-Attendance</h1>
 
-            <!-- Authentication Screens (Login, Phone Verify, OTP, Signup) -->
-            <div id="auth-screens" class="card">
-                <h1 class="text-2xl sm:text-3xl font-bold text-blue-800 text-center mb-4">Diya-Hero Self-Attendance</h1>
-
-                <!-- Login Form -->
-                <div id="login-form" class="space-y-5">
-                    <div class="form-group">
-                        <label for="login-email" class="block text-gray-700 text-sm font-semibold mb-2">Email</label>
-                        <input type="email" id="login-email" placeholder="Enter your email">
-                    </div>
-                    <div class="form-group">
-                        <label for="login-password"
-                            class="block text-gray-700 text-sm font-semibold mb-2">Password</label>
-                        <input type="password" id="login-password" placeholder="Enter your password">
-                    </div>
-                    <button id="login-btn" class="btn btn-primary">
-                        <i class="fas fa-sign-in-alt"></i> Login
-                    </button>
-                    <div id="login-message" class="message-box hidden"></div>
-                    <button id="show-signup-btn" class="btn btn-secondary mt-4">
-                        New Employee? Sign Up
-                    </button>
+            <!-- Login Form -->
+            <div id="login-form" class="space-y-5">
+                <div class="form-group">
+                    <label for="login-email" class="block text-gray-700 text-sm font-semibold mb-2">Email</label>
+                    <input type="email" id="login-email" placeholder="Enter your email">
                 </div>
-
-                <!-- Phone Verification Form -->
-                <div id="phone-verify-form" class="space-y-5 hidden">
-                    <p class="text-lg text-gray-700 text-center">Please enter the last 4 digits of your registered phone
-                        number.</p>
-                    <div class="form-group">
-                        <label for="last-4-digits" class="block text-gray-700 text-sm font-semibold mb-2">Last 4
-                            Digits</label>
-                        <input type="number" id="last-4-digits" placeholder="e.g., 1234" maxlength="4"
-                            oninput="this.value=this.value.slice(0,4)">
-                    </div>
-                    <button id="verify-phone-btn" class="btn btn-primary">
-                        Verify Phone
-                    </button>
-                    <div id="phone-verify-message" class="message-box hidden"></div>
-                    <button id="back-to-login-btn" class="btn btn-neutral mt-4">
-                        Back to Login
-                    </button>
+                <div class="form-group">
+                    <label for="login-password" class="block text-gray-700 text-sm font-semibold mb-2">Password</label>
+                    <input type="password" id="login-password" placeholder="Enter your password">
                 </div>
+                <button id="login-btn" class="btn btn-primary">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+                <div id="login-message" class="message-box hidden"></div>
+                <button id="show-signup-btn" class="btn btn-secondary mt-4">
+                    New Employee? Sign Up
+                </button>
+            </div>
 
-                <!-- OTP Verification Form -->
-                <div id="otp-form" class="space-y-5 hidden">
-                    <p class="text-lg text-gray-700 text-center">An OTP has been sent to your registered phone number.
-                    </p>
-                    <div class="form-group">
-                        <label for="otp-input" class="block text-gray-700 text-sm font-semibold mb-2">Enter OTP</label>
-                        <input type="number" id="otp-input" placeholder="Enter 6-digit OTP" maxlength="6"
-                            oninput="this.value=this.value.slice(0,6)">
-                    </div>
-                    <button id="verify-otp-btn" class="btn btn-primary">
-                        Verify OTP
-                    </button>
-                    <div id="otp-message" class="message-box hidden"></div>
-                    <button id="resend-otp-btn" class="btn btn-secondary mt-4" disabled>
-                        Resend OTP <span id="countdown-timer" class="ml-2"></span>
-                    </button>
-                    <div id="recaptcha-container" class="mt-4"></div>
+            <!-- Phone Verification Form -->
+            <div id="phone-verify-form" class="space-y-5 hidden">
+                <p class="text-lg text-gray-700 text-center">Please enter the last 4 digits of your registered phone
+                    number.</p>
+                <div class="form-group">
+                    <label for="last-4-digits" class="block text-gray-700 text-sm font-semibold mb-2">Last 4
+                        Digits</label>
+                    <input type="number" id="last-4-digits" placeholder="e.g., 1234" maxlength="4"
+                        oninput="this.value=this.value.slice(0,4)">
                 </div>
+                <button id="verify-phone-btn" class="btn btn-primary">
+                    Verify Phone
+                </button>
+                <div id="phone-verify-message" class="message-box hidden"></div>
+                <button id="back-to-login-btn" class="btn btn-neutral mt-4">
+                    Back to Login
+                </button>
+            </div>
 
-                <!-- Signup Form -->
-                <div id="signup-form" class="space-y-5 hidden">
-                    <div class="form-group">
-                        <label for="signup-name" class="block text-gray-700 text-sm font-semibold mb-2">Name</label>
-                        <input type="text" id="signup-name" placeholder="Enter your full name">
-                    </div>
-                    <div class="form-group">
-                        <label for="signup-email" class="block text-gray-700 text-sm font-semibold mb-2">Email</label>
-                        <input type="email" id="signup-email" placeholder="Enter your email">
-                    </div>
-                    <div class="form-group">
-                        <label for="signup-password"
-                            class="block text-gray-700 text-sm font-semibold mb-2">Password</label>
-                        <input type="password" id="signup-password" placeholder="Create a password">
-                    </div>
-                    <div class="form-group">
-                        <label for="signup-employee-id" class="block text-gray-700 text-sm font-semibold mb-2">Employee
-                            ID</label>
-                        <input type="text" id="signup-employee-id" placeholder="Enter your employee ID">
-                    </div>
-                    <div class="form-group">
-                        <label for="signup-phone" class="block text-gray-700 text-sm font-semibold mb-2">Phone Number
-                            (e.g.,
-                            +919876543210)</label>
-                        <input type="tel" id="signup-phone" placeholder="Enter your phone number with country code">
-                    </div>
-                    <!-- Branch Selection -->
-                    <div class="form-group">
-                        <label for="branchSelect" class="block text-gray-700 text-sm font-semibold mb-2">Branch</label>
-                        <select id="branchSelect" required
-                            class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
-                    </div>
-                    <!-- Subdivision Selection -->
-                    <div class="form-group">
-                        <label for="subdivisionSelect"
-                            class="block text-gray-700 text-sm font-semibold mb-2">Subdivision</label>
-                        <select id="subdivisionSelect" required
-                            class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            disabled>
-                            <option value="">Select a branch first</option>
-                        </select>
-                    </div>
-                    <button id="signup-btn" class="btn btn-primary">
-                        <i class="fas fa-user-plus"></i> Sign Up
-                    </button>
-                    <div id="signup-message" class="message-box hidden"></div>
-                    <button id="show-login-btn" class="btn btn-neutral mt-4">
-                        Already have an account? Login
+            <!-- OTP Verification Form -->
+            <div id="otp-form" class="space-y-5 hidden">
+                <p class="text-lg text-gray-700 text-center">An OTP has been sent to your registered phone number.</p>
+                <div class="form-group">
+                    <label for="otp-input" class="block text-gray-700 text-sm font-semibold mb-2">Enter OTP</label>
+                    <input type="number" id="otp-input" placeholder="Enter 6-digit OTP" maxlength="6"
+                        oninput="this.value=this.value.slice(0,6)">
+                </div>
+                <button id="verify-otp-btn" class="btn btn-primary">
+                    Verify OTP
+                </button>
+                <div id="otp-message" class="message-box hidden"></div>
+                <button id="resend-otp-btn" class="btn btn-secondary mt-4" disabled>
+                    Resend OTP <span id="countdown-timer" class="ml-2"></span>
+                </button>
+                <div id="recaptcha-container" class="mt-4"></div>
+            </div>
+
+            <!-- Signup Form -->
+            <div id="signup-form" class="space-y-5 hidden">
+                <div class="form-group">
+                    <label for="signup-name" class="block text-gray-700 text-sm font-semibold mb-2">Name</label>
+                    <input type="text" id="signup-name" placeholder="Enter your full name">
+                </div>
+                <div class="form-group">
+                    <label for="signup-email" class="block text-gray-700 text-sm font-semibold mb-2">Email</label>
+                    <input type="email" id="signup-email" placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label for="signup-password" class="block text-gray-700 text-sm font-semibold mb-2">Password</label>
+                    <input type="password" id="signup-password" placeholder="Create a password">
+                </div>
+                <div class="form-group">
+                    <label for="signup-employee-id" class="block text-gray-700 text-sm font-semibold mb-2">Employee
+                        ID</label>
+                    <input type="text" id="signup-employee-id" placeholder="Enter your employee ID">
+                </div>
+                <div class="form-group">
+                    <label for="signup-phone" class="block text-gray-700 text-sm font-semibold mb-2">Phone Number (e.g.,
+                        +919876543210)</label>
+                    <input type="tel" id="signup-phone" placeholder="Enter your phone number with country code">
+                </div>
+                <!-- Branch Selection -->
+                <div class="form-group">
+                    <label for="branchSelect" class="block text-gray-700 text-sm font-semibold mb-2">Branch</label>
+                    <select id="branchSelect" required
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+                </div>
+                <!-- Subdivision Selection -->
+                <div class="form-group">
+                    <label for="subdivisionSelect"
+                        class="block text-gray-700 text-sm font-semibold mb-2">Subdivision</label>
+                    <select id="subdivisionSelect" required
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled>
+                        <option value="">Select a branch first</option>
+                    </select>
+                </div>
+                <button id="signup-btn" class="btn btn-primary">
+                    <i class="fas fa-user-plus"></i> Sign Up
+                </button>
+                <div id="signup-message" class="message-box hidden"></div>
+                <button id="show-login-btn" class="btn btn-neutral mt-4">
+                    Already have an account? Login
+                </button>
+            </div>
+        </div>
+
+        <!-- Main App Screen -->
+        <div id="app-screen" class="card app-screen-card hidden">
+            <div class="app-header">
+                <h2 class="text-xl sm:text-2xl font-bold text-blue-800">Diya-Hero Self-Attendance</h2>
+                <div class="flex items-center gap-4">
+                    <span id="user-display-name" class="user-info-display"></span>
+                    <button id="logout-btn" class="btn btn-danger py-2 px-4 w-auto">
+                        <i class="fas fa-sign-out-alt"></i> Logout
                     </button>
                 </div>
             </div>
-
-            <!-- Main App Screen -->
-            <div id="app-screen" class="card app-screen-card hidden">
-                <div class="app-header">
-                    <h2 class="text-xl sm:text-2xl font-bold text-blue-800">Diya-Hero Self-Attendance</h2>
-                    <div class="flex items-center gap-4">
-                        <span id="user-display-name" class="user-info-display"></span>
-                        <button id="logout-btn" class="btn btn-danger py-2 px-4 w-auto">
-                            <i class="fas fa-sign-out-alt"></i> Logout
-                        </button>
-                    </div>
+            <div id="location-status" class="location-status-box">
+                <p><span id="location-message">Checking location...</span></p>
+            </div>
+            <!-- Location Refresh Button - Always visible on app screen -->
+            <div class="flex justify-center mt-4">
+                <button id="refresh-location-btn" class="btn btn-secondary w-auto px-6 py-3">
+                    <i class="fas fa-sync-alt"></i> Refresh Location
+                </button>
+            </div>
+            <div id="attendance-section" class="space-y-6">
+                <div class="form-group">
+                    <label for="morning-check"
+                        class="flex items-center text-lg font-semibold text-gray-700 cursor-pointer">
+                        <input type="checkbox" id="morning-check"> Morning Attendance
+                    </label>
                 </div>
-                <div id="location-status" class="location-status-box">
-                    <p><span id="location-message">Checking location...</span></p>
-                </div>
-                <!-- Location Refresh Button - Always visible on app screen -->
-                <div class="flex justify-center mt-4">
-                    <button id="refresh-location-btn" class="btn btn-secondary w-auto px-6 py-3">
-                        <i class="fas fa-sync-alt"></i> Refresh Location
-                    </button>
-                </div>
-                <div id="attendance-section" class="space-y-6">
-                    <div class="form-group">
-                        <label for="morning-check"
-                            class="flex items-center text-lg font-semibold text-gray-700 cursor-pointer">
-                            <input type="checkbox" id="morning-check"> Morning Attendance
+                <div class="form-group">
+                    <label class="block text-lg font-semibold text-gray-700 mb-3">Afternoon Status:</label>
+                    <div class="radio-group">
+                        <label for="an-enters" class="flex items-center text-base text-gray-700 cursor-pointer">
+                            <input type="radio" id="an-enters" name="afternoon-status" value="Enters"> Enters
+                        </label>
+                        <label for="an-leaves" class="flex items-center text-base text-gray-700 cursor-pointer">
+                            <input type="radio" id="an-leaves" name="afternoon-status" value="Leaves"> Leaves
+                        </label>
+                        <label for="an-none" class="flex items-center text-base text-gray-700 cursor-pointer">
+                            <input type="radio" id="an-none" name="afternoon-status" value="None" checked> None
                         </label>
                     </div>
-                    <div class="form-group">
-                        <label class="block text-lg font-semibold text-gray-700 mb-3">Afternoon Status:</label>
-                        <div class="radio-group">
-                            <label for="an-enters" class="flex items-center text-base text-gray-700 cursor-pointer">
-                                <input type="radio" id="an-enters" name="afternoon-status" value="Enters"> Enters
-                            </label>
-                            <label for="an-leaves" class="flex items-center text-base text-gray-700 cursor-pointer">
-                                <input type="radio" id="an-leaves" name="afternoon-status" value="Leaves"> Leaves
-                            </label>
-                            <label for="an-none" class="flex items-center text-base text-gray-700 cursor-pointer">
-                                <input type="radio" id="an-none" name="afternoon-status" value="None" checked> None
-                            </label>
-                        </div>
-                    </div>
-                    <div class="attendance-buttons">
-                        <button id="submit-attendance-btn" class="btn btn-primary" disabled>
-                            <i class="fas fa-check-circle"></i> Submit Attendance
-                        </button>
-                    </div>
-                    <div id="attendance-message" class="message-box hidden"></div>
                 </div>
+                <div class="attendance-buttons">
+                    <button id="submit-attendance-btn" class="btn btn-primary" disabled>
+                        <i class="fas fa-check-circle"></i> Submit Attendance
+                    </button>
+                </div>
+                <div id="attendance-message" class="message-box hidden"></div>
             </div>
         </div>
+    </div>
 
-        <!-- Modal for messages -->
-        <div id="message-modal-overlay" class="modal-overlay">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2 id="modal-title" class="text-xl sm:text-2xl font-bold text-blue-800"></h2>
-                    <button class="modal-close-btn">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <p id="modal-message" class="text-base sm:text-lg text-gray-700 leading-relaxed"></p>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-primary py-2 px-5 w-auto">OK</button>
-                </div>
+    <!-- Modal for messages -->
+    <div id="message-modal-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title" class="text-xl sm:text-2xl font-bold text-blue-800"></h2>
+                <button class="modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="modal-message" class="text-base sm:text-lg text-gray-700 leading-relaxed"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary py-2 px-5 w-auto">OK</button>
             </div>
         </div>
-    </div> <!-- Closes the #main-content div -->
-
+    </div>
     <script>
-        // Splash screen logic
-        let splashScreenFullyHidden = false; // New global flag
+        // Define the global onloadCallback function for reCAPTCHA
+        window.onloadCallback = function () {
+            console.log('reCAPTCHA script loaded successfully.');
+            // This function can be used to explicitly render a reCAPTCHA widget if needed,
+            // but for 'invisible' reCAPTCHA, it's often handled by RecaptchaVerifier directly.
+        };
+    </script>
+    <script type="module">
+        // Firebase Modular SDK v10+ imports
+        import {
+            initializeApp
+        } from 'https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js';
+        import {
+            getAuth,
+            signInWithEmailAndPassword,
+            signOut,
+            onAuthStateChanged,
+            createUserWithEmailAndPassword,
+            deleteUser,
+            RecaptchaVerifier,
+            signInWithPhoneNumber,
+            PhoneAuthProvider, // Import PhoneAuthProvider
+            linkWithCredential, // Import linkWithCredential
+            setPersistence,
+            browserLocalPersistence
+        } from 'https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js';
+        import {
+            getDatabase,
+            ref,
+            get,
+            set,
+            update,
+            onValue,
+            query,
+            orderByKey // Import orderByKey for fetching branches alphabetically
+        } from 'https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js';
+
+        // Firebase configuration (replace with your actual config if different)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBU3K7gRzqiqQt3o9thoEpd06ReLGVmm_w",
+            authDomain: "diya-hero.firebaseapp.com",
+            databaseURL: "https://diya-hero-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "diya-hero",
+            storageBucket: "diya-hero.firebasestorage.app",
+            messagingSenderId: "455829653263",
+            appId: "1:455829653263:web:5a31c65bdab2b9cee0607a",
+            measurementId: "G-DZYHPLQD3F"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app); 
+        const firebaseDatabase = getDatabase(app); // Use 'db' for Realtime Database instance
+
+        // --- Global State Variables ---
+        let currentUserData = null; // Stores the fetched user profile data from Realtime DB
+        let confirmationResult = null; // Used for Phone Auth OTP verification
+        let phoneNumberToVerify = ''; // Stores phone number for OTP flow
+        const OTP_COOLDOWN_SECONDS = 120; // 2 minutes for OTP resend
+        let otpCountdownInterval = null;
+        let recaptchaVerifierInstance = null;
+        let recaptchaWidgetId = null;
+        let currentDeviceId = null; // Stores the unique device ID for device binding
+
+        // Flags for controlling onAuthStateChanged processing
+        let isProcessingAuthState = false; // Prevents re-entry into onAuthStateChanged processing
+        let lastProcessedUID = null; // Tracks the UID that was last fully processed by onAuthStateChanged
+        let isAuthListenerInitialized = false; // Ensures auth state listener only processes once per session
+
+        // Store fetched branches data
+        let branchesData = {};
 
         // --- DOM Elements (initialized in getDomElements) ---
         const dom = {};
@@ -765,167 +739,6 @@
             dom.modalOkBtn = document.querySelector('#message-modal-overlay .btn-primary');
         }
 
-        // New function to initialize main app content and event listeners
-        function initializeMainAppContent() {
-            // Attach event listeners for primary actions
-            if (dom.loginBtn) dom.loginBtn.addEventListener('click', handleLogin);
-            if (dom.verifyPhoneBtn) dom.verifyPhoneBtn.addEventListener('click', handlePhoneVerify);
-            if (dom.verifyOtpBtn) dom.verifyOtpBtn.addEventListener('click', handleOtpVerification);
-            if (dom.resendOtpBtn) dom.resendOtpBtn.addEventListener('click', handleResendOtp);
-            if (dom.signupBtn) dom.signupBtn.addEventListener('click', handleSignup);
-            if (dom.logoutBtn) dom.logoutBtn.addEventListener('click', handleLogout);
-
-            // Toggle authentication views
-            if (dom.showSignupBtn) dom.showSignupBtn.addEventListener('click', () => toggleAuthView('signup'));
-            if (dom.showLoginBtn) dom.showLoginBtn.addEventListener('click', () => toggleAuthView('login'));
-            if (dom.backToLoginBtn) dom.backToLoginBtn.addEventListener('click', () => toggleAuthView('login'));
-
-            // New: Add event listeners for branch and subdivision dropdowns
-            if (dom.branchSelect) {
-                dom.branchSelect.addEventListener('change', (event) => {
-                    populateSubdivisionsDropdown(event.target.value);
-                });
-            }
-
-            // Attach event listeners for attendance form changes
-            if (dom.refreshLocationBtn) dom.refreshLocationBtn.addEventListener('click', checkUserLocationAndAttendance);
-            if (dom.morningCheck) dom.morningCheck.addEventListener('change', updateFormDisablementBasedOnTime);
-            if (dom.anEnters) dom.anEnters.addEventListener('change', updateFormDisablementBasedOnTime);
-            if (dom.anLeaves) dom.anLeaves.addEventListener('change', updateFormDisablementBasedOnTime);
-            if (dom.anNone) dom.anNone.addEventListener('change', updateFormDisablementBasedOnTime);
-            if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.addEventListener('click', submitAttendance);
-
-            // Start the location check interval
-            setInterval(updateFormDisablementBasedOnTime, 60000); // Check every minute
-
-            // Manually trigger the onAuthStateChanged logic if it hasn't been processed yet
-            // This ensures the current user's state is evaluated immediately after splash screen
-            // and event listeners are set up.
-            if (!isAuthListenerInitialized && auth.currentUser) {
-                // If a user is already signed in (e.g., from a previous session due to persistence),
-                // we manually trigger the auth state processing.
-                onAuthStateChanged(auth, (user) => {
-                    // This callback will now respect the splashScreenFullyHidden flag
-                    // and ensure the UI is updated only when ready.
-                });
-            } else if (!auth.currentUser) {
-                // If no user is signed in, ensure login view is shown
-                toggleAuthView('login');
-            }
-        }
-
-
-        window.addEventListener('load', function () {
-            const splashScreen = document.getElementById('splash-screen');
-            const mainContent = document.getElementById('main-content');
-
-            // Optional: Minimum display time for the splash screen
-            const minDisplayTime = 1500; // 1.5 seconds
-            const startTime = Date.now();
-
-            function hideSplashScreen() {
-                if (splashScreen) {
-                    splashScreen.classList.add('hidden');
-                    // Ensure the splash screen is completely removed from flow after transition
-                    splashScreen.addEventListener('transitionend', function () {
-                        splashScreen.style.display = 'none';
-                        if (mainContent) {
-                            mainContent.style.display = 'flex'; // Show main content with centering
-                        }
-                        splashScreenFullyHidden = true; // Set flag to true
-                        initializeMainAppContent(); // Initialize main app content after splash screen is gone
-                    }, { once: true }); // 'once: true' ensures the event listener is removed after it runs
-                } else if (mainContent) {
-                    // Fallback if splashScreen element is somehow missing
-                    mainContent.style.display = 'flex';
-                    splashScreenFullyHidden = true; // Set flag to true
-                    initializeMainAppContent(); // Initialize main app content immediately
-                }
-            }
-
-            const elapsedTime = Date.now() - startTime;
-            if (elapsedTime < minDisplayTime) {
-                // If loaded faster than minDisplayTime, wait for the remaining time
-                setTimeout(hideSplashScreen, minDisplayTime - elapsedTime);
-            } else {
-                // If loaded slower or equal to minDisplayTime, hide immediately
-                hideSplashScreen();
-            }
-        });
-
-        // Define the global onloadCallback function for reCAPTCHA
-        window.onloadCallback = function () {
-            console.log('reCAPTCHA script loaded successfully.');
-            // This function can be used to explicitly render a reCAPTCHA widget if needed,
-            // but for 'invisible' reCAPTCHA, it's often handled by RecaptchaVerifier directly.
-        };
-    </script>
-    <script type="module">
-        // Firebase Modular SDK v10+ imports
-        import {
-            initializeApp
-        } from 'https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js';
-        import {
-            getAuth,
-            signInWithEmailAndPassword,
-            signOut,
-            onAuthStateChanged,
-            createUserWithEmailAndPassword,
-            deleteUser,
-            RecaptchaVerifier,
-            signInWithPhoneNumber,
-            PhoneAuthProvider, // Import PhoneAuthProvider
-            linkWithCredential, // Import linkWithCredential
-            setPersistence,
-            browserLocalPersistence
-        } from 'https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js';
-        import {
-            getDatabase,
-            ref,
-            get,
-            set,
-            update,
-            onValue,
-            query,
-            orderByKey,
-            push // Import push for generating unique IDs
-        } from 'https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js';
-
-        // Firebase configuration (replace with your actual config if different)
-        const firebaseConfig = {
-            apiKey: "AIzaSyBU3K7gRzqiqQt3o9thoEpd06ReLGVmm_w",
-            authDomain: "diya-hero.firebaseapp.com",
-            databaseURL: "https://diya-hero-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "diya-hero",
-            storageBucket: "diya-hero.firebasestorage.app",
-            messagingSenderId: "455829653263",
-            appId: "1:455829653263:web:5a31c65bdab2b9cee0607a",
-            measurementId: "G-DZYHPLQD3F"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getDatabase(app);
-        const firebaseDatabase = getDatabase(app); // Use 'db' for Realtime Database instance
-
-        // --- Global State Variables ---
-        let currentUserData = null; // Stores the fetched user profile data from Realtime DB
-        let confirmationResult = null; // Used for Phone Auth OTP verification
-        let phoneNumberToVerify = ''; // Stores phone number for OTP flow
-        const OTP_COOLDOWN_SECONDS = 120; // 2 minutes for OTP resend
-        let otpCountdownInterval = null;
-        let recaptchaVerifierInstance = null;
-        let recaptchaWidgetId = null;
-        let currentDeviceId = null; // Stores the unique device ID for device binding
-
-        // Flags for controlling onAuthStateChanged processing
-        let isProcessingAuthState = false; // Prevents re-entry into onAuthStateChanged processing
-        let lastProcessedUID = null; // Tracks the UID that was last fully processed by onAuthStateChanged
-        let isAuthListenerInitialized = false; // Ensures auth state listener only processes once per session
-
-        // Store fetched branches data
-        let branchesData = {};
 
         // --- Utility Functions ---
         function showMessage(element, message, type) {
@@ -1133,7 +946,6 @@
                 if (dom.anNone) dom.anNone.disabled = true;
                 return;
             }
-
             if (!currentUserData.phone) {
                 showModal('Phone Not Found', 'Your registered phone number is missing or invalid. Please contact Admin.', () => {
                     toggleAuthView('login');
@@ -1158,47 +970,7 @@
             if (dom.anLeaves) dom.anLeaves.disabled = true;
             if (dom.anNone) dom.anNone.disabled = true;
 
-            // 🛡️ STEP 1: Native fake GPS detection via AndroidBridge
-            try {
-                const isSpoofed = typeof AndroidBridge !== "undefined" &&
-                    typeof AndroidBridge.isMockLocation === "function" &&
-                    AndroidBridge.isMockLocation();
 
-                if (isSpoofed) {
-                    showModal("⚠️ Fake GPS Detected", "Spoofed location apps are not allowed. Please disable and try again.");
-
-                    // 🔄 Log spoof to Firebase
-                    try {
-                        const spoofLogRef = push(ref(db, "spoofLogs")); // auto-generated ID
-                        await set(spoofLogRef, {
-                            uid: currentUserData?.uid || "unknown",
-                            empId: currentUserData?.id || "N/A",
-                            branch: currentUserData?.branch || "unknown",
-                            timestamp: new Date().toISOString(),
-                            reason: "Mock location detected via AndroidBridge"
-                        });
-                    } catch (logErr) {
-                        console.error("Failed to log spoof event:", logErr);
-                    }
-
-                    // Disable all inputs to prevent attendance
-                    if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.disabled = true;
-                    if (dom.morningCheck) dom.morningCheck.disabled = true;
-                    if (dom.anEnters) dom.anEnters.disabled = true;
-                    if (dom.anLeaves) dom.anLeaves.disabled = true;
-                    if (dom.anNone) dom.anNone.disabled = true;
-
-                    dom.locationStatus.classList.add('error');
-                    dom.locationMessage.textContent = "Fake GPS detected on your device.";
-
-                    return;
-                }
-            } catch (e) {
-                console.error("Fake GPS check error:", e);
-                // Optional: allow fallback or show a message
-            }
-
-            // 📍 STEP 2: Proceed with actual GPS and Firebase check
             if ("geolocation" in navigator) {
                 try {
                     const position = await new Promise((resolve, reject) => {
@@ -1222,7 +994,7 @@
                         const branchData = branchSnapshot.val();
                         const branchLatitude = branchData.latitude;
                         const branchLongitude = branchData.longitude;
-                        const radius = branchData.radius || 100;
+                        const radius = branchData.radius || 100; // Default to 100 meters if not set
 
                         const distance = calculateDistance(latitude, longitude, branchLatitude, branchLongitude);
                         console.log(`Distance to branch (${currentUserData.branch}): ${distance.toFixed(2)} meters`);
@@ -1231,7 +1003,7 @@
                             dom.locationStatus.classList.remove('error');
                             dom.locationStatus.classList.add('verified');
                             dom.locationMessage.textContent = `Location Verified: Within ${currentUserData.branch} branch.`;
-                            updateFormDisablementBasedOnTime();
+                            updateFormDisablementBasedOnTime(); // Enable/disable based on time and location
                         } else {
                             dom.locationStatus.classList.remove('verified');
                             dom.locationStatus.classList.add('error');
@@ -1923,28 +1695,6 @@
                 return;
             }
 
-            // Only proceed with UI updates if the splash screen is fully hidden
-            if (!splashScreenFullyHidden) {
-                console.log("onAuthStateChanged triggered before splash screen hidden. Deferring UI update.");
-                // We still update currentUserData and other internal states if necessary,
-                // but defer the UI changes until initializeMainAppContent is called.
-                if (user) {
-                    await generateDeviceId();
-                    const userRef = ref(db, `users/${user.uid}`);
-                    const snapshot = await get(userRef);
-                    if (snapshot.exists()) {
-                        currentUserData = snapshot.val();
-                    } else {
-                        currentUserData = null;
-                        console.warn("User data not found in DB for UID:", user.uid, "before splash screen hidden.");
-                    }
-                } else {
-                    currentUserData = null;
-                }
-                return;
-            }
-
-
             if (user && user.uid === lastProcessedUID && isAuthListenerInitialized) {
                 console.log("Auth state for this user already processed. Skipping.");
                 return;
@@ -2034,7 +1784,7 @@
                         // User exists in Auth but not in Realtime DB (should not happen with proper signup flow)
                         console.warn("User data not found in DB for UID:", user.uid);
                         showModal('User Data Missing', 'Your user profile is incomplete. Please contact Admin.', async () => {
-
+                            
                             await signOut(auth);
                             dom.authScreens.classList.remove('hidden');
                             dom.appScreen.classList.add('hidden');
@@ -2065,31 +1815,42 @@
 
 
         // --- Event Listeners ---
-        document.addEventListener('DOMContentLoaded', async () => { // Made async to use await for caching
+        document.addEventListener('DOMContentLoaded', () => {
             getDomElements(); // Initialize DOM elements first
 
-            // Pre-cache the splash screen background image
-            const splashScreenImageUrl = 'https://placehold.co/1920x1080/E0E0E0/333333?text=Your+Background+Image'; // IMPORTANT: This URL must match the CSS background-image URL
-            try {
-                if ('caches' in window) { // Check if Cache API is supported
-                    const cache = await caches.open('splash-screen-assets');
-                    const response = await cache.match(splashScreenImageUrl);
-                    if (!response) {
-                        // Image not in cache, fetch and add it
-                        await cache.add(splashScreenImageUrl);
-                        console.log('Splash screen image cached successfully.');
-                    } else {
-                        console.log('Splash screen image already in cache.');
-                    }
-                } else {
-                    console.warn('Cache API not supported. Splash screen image will not be cached.');
-                }
-            } catch (error) {
-                console.error('Failed to cache splash screen image:', error);
+            // Attach event listeners for primary actions
+            if (dom.loginBtn) dom.loginBtn.addEventListener('click', handleLogin);
+            if (dom.verifyPhoneBtn) dom.verifyPhoneBtn.addEventListener('click', handlePhoneVerify);
+            if (dom.verifyOtpBtn) dom.verifyOtpBtn.addEventListener('click', handleOtpVerification);
+            if (dom.resendOtpBtn) dom.resendOtpBtn.addEventListener('click', handleResendOtp);
+            if (dom.signupBtn) dom.signupBtn.addEventListener('click', handleSignup);
+            if (dom.logoutBtn) dom.logoutBtn.addEventListener('click', handleLogout);
+
+            // Toggle authentication views
+            if (dom.showSignupBtn) dom.showSignupBtn.addEventListener('click', () => toggleAuthView('signup'));
+            if (dom.showLoginBtn) dom.showLoginBtn.addEventListener('click', () => toggleAuthView('login'));
+            if (dom.backToLoginBtn) dom.backToLoginBtn.addEventListener('click', () => toggleAuthView('login'));
+
+            // New: Add event listeners for branch and subdivision dropdowns
+            if (dom.branchSelect) {
+                dom.branchSelect.addEventListener('change', (event) => {
+                    populateSubdivisionsDropdown(event.target.value);
+                });
             }
 
-            // The rest of the main app initialization is now handled by initializeMainAppContent()
-            // which is called after the splash screen is fully hidden.
+
+            // Attach event listeners for attendance form changes
+            // The refreshLocationBtn is now always visible on the app screen, its listener is set up here.
+            if (dom.refreshLocationBtn) dom.refreshLocationBtn.addEventListener('click', checkUserLocationAndAttendance);
+            if (dom.morningCheck) dom.morningCheck.addEventListener('change', updateFormDisablementBasedOnTime);
+            if (dom.anEnters) dom.anEnters.addEventListener('change', updateFormDisablementBasedOnTime);
+            if (dom.anLeaves) dom.anLeaves.addEventListener('change', updateFormDisablementBasedOnTime);
+            if (dom.anNone) dom.anNone.addEventListener('change', updateFormDisablementBasedOnTime);
+            if (dom.submitAttendanceBtn) dom.submitAttendanceBtn.addEventListener('click', submitAttendance);
+
+            // Initial call to update form disablement and set up interval
+            // The onAuthStateChanged listener now handles the initial call to checkUserLocationAndAttendance()
+            setInterval(updateFormDisablementBasedOnTime, 60000); // Check every minute
         });
         function showError(msg) {
             // Updated to use the modal for error messages
