@@ -29,8 +29,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            /* Changed from background-color to background-image */
-            background-image: url('https://cdn.imgchest.com/files/7kzcabxmoq7.jpg'); /* Replace with your image URL */
+            /* IMPORTANT: Ensure this URL matches the one in the JavaScript for caching */
+            background-image: url('https://placehold.co/1920x1080/E0E0E0/333333?text=Your+Background+Image'); /* Replace with your actual image URL */
             background-size: cover; /* Ensures the image covers the entire splash screen */
             background-position: center; /* Centers the background image */
             background-repeat: no-repeat; /* Prevents the image from repeating */
@@ -479,9 +479,9 @@
 <body>
     <!-- Splash Screen -->
     <div id="splash-screen">
-        <img src="https://cdn.imgchest.com/files/y8xcnkao8r4.png" alt="Diya-Hero Logo" style="max-width: 150px; border-radius: 8px;">
+        <img src="https://placehold.co/150x150/0000FF/FFFFFF?text=Diya-Hero" alt="Diya-Hero Logo" style="max-width: 150px; border-radius: 8px;">
         <div class="loading-spinner mt-8"></div>
-        <p style="margin-top: 20px; color: #555; font-size: 1.1rem;">Welcome to Diya-Motors Attendance App</p>
+        <p style="margin-top: 20px; color: #555; font-size: 1.1rem;">Loading your attendance app...</p>
     </div>
 
     <!-- Main Content Wrapper (initially hidden) -->
@@ -826,7 +826,7 @@
             dom.locationStatus = document.getElementById('location-status');
             dom.locationMessage = document.getElementById('location-message');
             dom.attendanceSection = document.getElementById('attendance-section');
-            dom.morningCheck = document.getElementById('morning-check');
+            dom.morningCheck = document = document.getElementById('morning-check');
             dom.anEnters = document.getElementById('an-enters');
             dom.anLeaves = document.getElementById('an-leaves');
             dom.anNone = document.getElementById('an-none');
@@ -1918,8 +1918,28 @@
 
 
         // --- Event Listeners ---
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => { // Made async to use await for caching
             getDomElements(); // Initialize DOM elements first
+
+            // Pre-cache the splash screen background image
+            const splashScreenImageUrl = 'https://placehold.co/1920x1080/E0E0E0/333333?text=Your+Background+Image'; // IMPORTANT: Replace with your actual image URL
+            try {
+                if ('caches' in window) { // Check if Cache API is supported
+                    const cache = await caches.open('splash-screen-assets');
+                    const response = await cache.match(splashScreenImageUrl);
+                    if (!response) {
+                        // Image not in cache, fetch and add it
+                        await cache.add(splashScreenImageUrl);
+                        console.log('Splash screen image cached successfully.');
+                    } else {
+                        console.log('Splash screen image already in cache.');
+                    }
+                } else {
+                    console.warn('Cache API not supported. Splash screen image will not be cached.');
+                }
+            } catch (error) {
+                console.error('Failed to cache splash screen image:', error);
+            }
 
             // Attach event listeners for primary actions
             if (dom.loginBtn) dom.loginBtn.addEventListener('click', handleLogin);
