@@ -29,7 +29,11 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: #fff; /* White background, adjust as needed */
+            /* Changed from background-color to background-image */
+            background-image: url('https://cdn.imgchest.com/files/7kzcabxmoq7.jpg'); /* Replace with your image URL */
+            background-size: cover; /* Ensures the image covers the entire splash screen */
+            background-position: center; /* Centers the background image */
+            background-repeat: no-repeat; /* Prevents the image from repeating */
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -475,9 +479,9 @@
 <body>
     <!-- Splash Screen -->
     <div id="splash-screen">
-        <img src="https://placehold.co/150x150/0000FF/FFFFFF?text=Diya-Hero" alt="Diya-Hero Logo" style="max-width: 150px; border-radius: 8px;">
+        <img src="https://cdn.imgchest.com/files/y8xcnkao8r4.png" alt="Diya-Hero Logo" style="max-width: 150px; border-radius: 8px;">
         <div class="loading-spinner mt-8"></div>
-        <p style="margin-top: 20px; color: #555; font-size: 1.1rem;">Loading your attendance app...</p>
+        <p style="margin-top: 20px; color: #555; font-size: 1.1rem;">Welcome to Diya-Motors Attendance App</p>
     </div>
 
     <!-- Main Content Wrapper (initially hidden) -->
