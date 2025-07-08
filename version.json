@@ -1,6 +1,6 @@
 {
-  "versionCode": 4,
-  "apkUrl": "https://czviewer.github.io/DiyaScanner/releases/DiyaMobikesv4.apk",
+  "versionCode": 5,
+  "apkUrl": "https://czviewer.github.io/DiyaScanner/releases/DiyaMobikesv5.apk",
   "forceUpdate": true,
   "message": "Critical update: Security patches applied. Update is mandatory.",
    "sha256": "4F51305E202D67EAF8E27F2928654E4CB2DF361E171C3ABDAB1D1F32CD5363B0"
