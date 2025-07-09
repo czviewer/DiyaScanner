@@ -1,5 +1,5 @@
 {
-  "versionCode": 7,
+  "versionCode": 1,
   "apkUrl": "https://czviewer.github.io/DiyaScanner/releases/DiyaMobikesv1.apk",
   "forceUpdate": true,
   "message": "Critical update: Security patches applied. Update is mandatory.",
