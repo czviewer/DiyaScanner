@@ -1,7 +1,7 @@
 {
   "versionCode": 2,
-  "apkUrl": "https://czviewer.github.io/DiyaScanner/releases/Diya-Motors_v2.apk",
+  "apkUrl": "https://czviewer.github.io/DiyaScanner/releases/Diya-Motors_v3.apk",
   "forceUpdate": true,
   "message": "Critical update: Security patches applied. Update is mandatory.",
-   "sha256": "f66a04d6281f9fe9228cddcb48d0e5d2a214ced95195c5c6329595f9a12ab60a"
+   "sha256": "1e46b71ac6320ac33cefc6ff0f5c85215e6b5976b78f8e6f9df24d04b9b1f5a1"
 }
