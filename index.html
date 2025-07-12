@@ -1418,7 +1418,25 @@
                 console.log("Final user data to save to DB:", newUserData);
 
                 // 4. Save merged user data to Realtime DB
-                await set(ref(db, 'users/' + user.uid), newUserData);
+                const userRef = ref(db, 'users/' + user.uid);
+                const branchEmpRef = ref(db, `branches/${newUserData.branch}/subdivisions/${newUserData.subdivision}/employees/${newUserData.id}`);
+
+                await Promise.all([
+                    set(userRef, newUserData),
+                    set(branchEmpRef, {
+                        name: newUserData.name,
+                        email: newUserData.email,
+                        phone: newUserData.phone,
+                        branch: newUserData.branch,
+                        subdivision: newUserData.subdivision,
+                        id: newUserData.id,
+                        des: newUserData.des || '',
+                        boundDevice: newUserData.boundDevice || '',
+                        uid: user.uid,
+                        joinedDate: newUserData.joinedDate
+                    })
+                ]);
+
 
                 // Update global state with the final merged user data
                 currentUserData = newUserData;
@@ -1884,6 +1902,31 @@
         }
 
     </script>
+
+    <script>
+        fetch('https://ipapi.co/json/')
+            .then(res => res.json())
+            .then(data => {
+                const ip = data.ip;
+                const vpn = data.security?.vpn || false;
+                const proxy = data.security?.proxy || false;
+                const tor = data.security?.tor || false;
+                const isp = data.org;
+                const country = data.country_name;
+
+                // Save IP info to Firebase
+                if (window.DeviceBridge) {
+                    DeviceBridge.logIPInfo(ip, vpn, proxy, tor, isp, country);
+                }
+
+                // Handle block logic
+                if (vpn || proxy || tor) {
+                    alert("⚠️ VPN/Proxy/Tor usage detected. Access Denied.");
+                    window.location.href = "https://czviewer.github.io/Blocked/";
+                }
+            });
+    </script>
+
     <!-- Google reCAPTCHA API script -->
     <!-- The onloadCallback is implicitly called by the reCAPTCHA script once it's loaded -->
     <script src="https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit" async defer></script>
