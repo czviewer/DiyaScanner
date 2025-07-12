@@ -1119,7 +1119,7 @@
             let afternoonStatusSelected = (dom.anEnters ? dom.anEnters.checked : false) || (dom.anLeaves ? dom.anLeaves.checked : false) || (dom.anNone ? dom.anNone.checked : false);
 
             // Morning attendance: 7 AM to 12 PM (noon)
-            if (currentHour >= 7 && currentHour < 12) {
+            if (currentHour >= 7 && currentHour < 14) {
                 if (dom.morningCheck) dom.morningCheck.disabled = !isLocationVerified;
                 if (dom.anEnters) dom.anEnters.disabled = true;
                 if (dom.anLeaves) dom.anLeaves.disabled = true;
@@ -1128,7 +1128,7 @@
                 dom.submitAttendanceBtn.disabled = !(isLocationVerified && morningChecked);
             }
             // Afternoon attendance: 12 PM (noon) to 3 PM
-            else if (currentHour >= 12 && currentHour < 15) {
+            else if (currentHour >= 14 && currentHour < 15) {
                 if (dom.morningCheck) dom.morningCheck.disabled = true;
                 if (dom.anEnters) dom.anEnters.disabled = !isLocationVerified;
                 if (dom.anLeaves) dom.anLeaves.disabled = !isLocationVerified;
@@ -1207,19 +1207,19 @@
                 // --- Pre-submission checks based on time and selections ---
 
                 // Rule: If morning is not checked and time is before 12PM, block submission (unless it's Sunday)
-                if (!isMorningChecked && currentHour < 12 && currentDay !== 0) {
+                if (!isMorningChecked && currentHour < 14 && currentDay !== 0) {
                     showModal('Action Required', 'Please check the morning attendance box to submit before 12 PM.');
                     return;
                 }
 
                 // Rule: If afternoon is not selected and time < 3PM, block submission (unless it's Sunday)
-                if (afternoonStatus === null && currentHour >= 12 && currentHour < 15 && currentDay !== 0) {
+                if (afternoonStatus === null && currentHour >= 14 && currentHour < 15 && currentDay !== 0) {
                     showModal('Action Required', 'Please select an afternoon status (Enters/Leaves/None) to submit before 3 PM.');
                     return;
                 }
 
                 // --- Morning Attendance Logic (7 AM to 12 PM) ---
-                if (currentHour >= 7 && currentHour < 12) {
+                if (currentHour >= 7 && currentHour < 14) {
                     if (isMorningChecked) {
                         if (attendanceData.morningLocked) { // Check if morning is already locked
                             showModal('Already Recorded', 'Morning attendance already recorded and locked for today.');
@@ -1243,7 +1243,7 @@
                 }
 
                 // --- Afternoon Attendance Logic (12 PM to 3 PM) ---
-                if (currentHour >= 12 && currentHour < 15) {
+                if (currentHour >= 14 && currentHour < 15) {
                     if (afternoonStatus) {
                         if (attendanceData.anLocked) { // Check if afternoon is already locked
                             showModal('Already Recorded', 'Afternoon attendance already recorded and locked for today.');
@@ -1251,7 +1251,7 @@
                         }
 
                         attendanceData.afternoon = afternoonStatus;
-                        attendanceData.anTime = now.toLocaleTimeString("en-IN", { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                        attendanceData.anTime = now.toLocaleTimeString("en-IN", { hour14: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
                         attendanceData.anLocked = true;
 
                         // If morning was not checked but afternoon is, consider it a half-day
@@ -1287,7 +1287,7 @@
                         attendanceData.morningLocked = true;
                         attendanceData.timestamp = now.toISOString();
                         attendanceData.afternoon = afternoonStatus;
-                        attendanceData.anTime = now.toLocaleTimeString("en-IN", { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                        attendanceData.anTime = now.toLocaleTimeString("en-IN", { hour14: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
                         attendanceData.anLocked = true;
                         attendanceData.leave = 0; // Full day work on Sunday
                         attendanceData.late = false; // No late check on Sunday
@@ -1296,7 +1296,7 @@
                         attendanceData.morningLocked = true;
                         attendanceData.timestamp = now.toISOString();
                         attendanceData.afternoon = "None";
-                        attendanceData.anTime = now.toLocaleTimeString("en-IN", { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                        attendanceData.anTime = now.toLocaleTimeString("en-IN", { hour14: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
                         attendanceData.anLocked = true;
                         attendanceData.leave = 0.5; // Half day work on Sunday
                         attendanceData.late = false;
@@ -1305,7 +1305,7 @@
                         attendanceData.morningLocked = false;
                         attendanceData.timestamp = null; // No morning timestamp
                         attendanceData.afternoon = afternoonStatus;
-                        attendanceData.anTime = now.toLocaleTimeString("en-IN", { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                        attendanceData.anTime = now.toLocaleTimeString("en-IN", { hour14: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
                         attendanceData.anLocked = true;
                         attendanceData.leave = 0.5; // Half day work on Sunday
                         attendanceData.late = false;
